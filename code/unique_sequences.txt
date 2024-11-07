@@ -1,0 +1,35 @@
+#T1
+3DT1-*-1_run-*.PAR
+3DT1-*-1.PAR
+
+#T2
+T2GREph-*-1.PAR
+T2GREph-SENSE-*-1.PAR
+
+# DWI PA
+
+DTI2-3-ok-*-1.PAR
+DTI2-3-alt-*-1.PAR 
+WIP-DTI2-3-SENSE-*-1.PAR
+WIP-DTI2-3-SENSE-*-1_run-*.PAR
+
+# DWI AP
+DTI2-3-alt-topup-*-1.PAR
+
+#B0
+WIP-B0MAP-*-1_run-*.PAR
+WIP-B0MAP-*-1.PAR
+
+# REST
+
+rs-multi-echo-*-1.PAR
+rs-multi-echo-SENSE-*-1.PAR
+
+# STOP
+stop-SENSE-*-1.PAR
+WIP-stop-SENSE-*-1.PAR
+stop-*-1.PAR
+
+# DOT
+dot-*-1.PAR
+dot-SENSE-*-1.PAR
