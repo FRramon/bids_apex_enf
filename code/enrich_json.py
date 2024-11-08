@@ -5,7 +5,11 @@ import re
 import glob
 import json
 
+#########  BIDS CONVERSION
 
+# After defining bidsmap.yaml in /rawdata/code/bidscoin/bidsmap.yaml
+# from CLI in /My Passport :
+# bidsmapper source_data rawdata
 
 
 def split_date_time(date_output):
@@ -131,7 +135,7 @@ df_bidcoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
 print(df_bidcoiner_history.columns)
 
 
-rename_target = False
+rename_target = True
 if rename_target:
 	df_list = []
 
@@ -403,25 +407,27 @@ for file,datatype,targets in tqdm(zip(sequences_info["source"],sequences_info["d
 
 		json_enrichment = read_par_T1(file)
 
-		target_list = targets.split(',')
+		if isinstance(targets, str):
 
-		for target_elements in target_list:
+			target_list = targets.split(',')
 
-			cleaned_target = target_elements.replace("'", "").replace(" ", "")
+			for target_elements in target_list:
 
-			target_json_file = os.path.join(rawdata_dir,subject_id,session_id,datatype,f"{cleaned_target[:-7]}.json")
+				cleaned_target = target_elements.replace("'", "").replace(" ", "")
 
-			with open(target_json_file, 'r') as file:
-				data = json.load(file)
+				target_json_file = os.path.join(rawdata_dir,subject_id,session_id,datatype,f"{cleaned_target[:-7]}.json")
 
-			if isinstance(data, list):
-				data.append(json_enrichment)
-			elif isinstance(data, dict):
-				data.update(json_enrichment)
+				with open(target_json_file, 'r') as file:
+					data = json.load(file)
 
-			# Step 3: Save the updated data back to the JSON file
-			with open(target_json_file, 'w') as file:
-				json.dump(data, file, indent=4)
+				if isinstance(data, list):
+					data.append(json_enrichment)
+				elif isinstance(data, dict):
+					data.update(json_enrichment)
+
+				# Step 3: Save the updated data back to the JSON file
+				with open(target_json_file, 'w') as file:
+					json.dump(data, file, indent=4)
 
 
 
