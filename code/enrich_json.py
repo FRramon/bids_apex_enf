@@ -5,6 +5,14 @@ import re
 import glob
 import json
 
+
+########################################
+# This script check bidscoiner conversion, and rename files after run1 run2 if one run2 is found, but no run1
+# After that, it enriches every json file from the content of its associated PAR file
+# Finally, duplicates dwi,dwi AP are deleted
+# final step = 278 T2 over 296 avec two runs; visual selection using QT app
+
+
 #########  BIDS CONVERSION
 
 # After defining bidsmap.yaml in /rawdata/code/bidscoin/bidsmap.yaml
@@ -135,7 +143,7 @@ df_bidcoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
 print(df_bidcoiner_history.columns)
 
 
-rename_target = True
+rename_target = False
 if rename_target:
 	df_list = []
 
@@ -256,6 +264,7 @@ if rename_target:
 						new_filename = '_'.join(file_split[:2]) + "_run-1_" + '_'.join(file_split[2:])
 
 						print(f"rename {files} to {new_filename}")
+						#os.rename(files,new_filename)
 
 						new_filename_list.append(new_filename)
 
@@ -393,41 +402,263 @@ if rename_target:
 
 sequences_info = pd.read_csv("/Volumes/My Passport/rawdata/sequences_info.csv")
 
+enrich_json = False
 
-for file,datatype,targets in tqdm(zip(sequences_info["source"],sequences_info["datatype"],sequences_info["targets_renamed"]),total = len(sequences_info)):
+if enrich_json:
+
+	for file,datatype,targets in tqdm(zip(sequences_info["source"],sequences_info["datatype"],sequences_info["targets_renamed"]),total = len(sequences_info)):
 
 
-	if not "stop" in file and not "dot" in file:
+		if not "stop" in file and not "dot" in file:
 
 
-		file_split = file.split('/')
+			file_split = file.split('/')
 
-		subject_id = file_split[4]
-		session_id = file_split[5]
+			subject_id = file_split[4]
+			session_id = file_split[5]
 
-		json_enrichment = read_par_T1(file)
+			json_enrichment = read_par_T1(file)
 
-		if isinstance(targets, str):
+			if isinstance(targets, str):
 
-			target_list = targets.split(',')
+				target_list = targets.split(',')
 
-			for target_elements in target_list:
+				for target_elements in target_list:
 
-				cleaned_target = target_elements.replace("'", "").replace(" ", "")
+					cleaned_target = target_elements.replace("'", "").replace(" ", "")
 
-				target_json_file = os.path.join(rawdata_dir,subject_id,session_id,datatype,f"{cleaned_target[:-7]}.json")
+					target_json_file = os.path.join(rawdata_dir,subject_id,session_id,datatype,f"{cleaned_target[:-7]}.json")
 
-				with open(target_json_file, 'r') as file:
-					data = json.load(file)
+					with open(target_json_file, 'r') as file:
+						data = json.load(file)
 
-				if isinstance(data, list):
-					data.append(json_enrichment)
-				elif isinstance(data, dict):
-					data.update(json_enrichment)
+					if isinstance(data, list):
+						data.append(json_enrichment)
+					elif isinstance(data, dict):
+						data.update(json_enrichment)
 
-				# Step 3: Save the updated data back to the JSON file
-				with open(target_json_file, 'w') as file:
-					json.dump(data, file, indent=4)
+					# Step 3: Save the updated data back to the JSON file
+					with open(target_json_file, 'w') as file:
+						json.dump(data, file, indent=4)
+
+
+## Corrige nom run1 run2 avec les dates
+
+correct_run_time = True
+if correct_run_time:
+
+	T2_tot = 0
+
+	correct_T1 = 0
+	correct_T2 = 0
+	correct_dwi = 0
+	correct_dwiAP = 0
+	correct_rs = 0
+	correct_b0 = 0
+
+	df_list = []
+
+	subject_list = [s for s in os.listdir(rawdata_dir) if "sub" in s]
+
+	for sub in subject_list:
+		session_list = [s for s in os.listdir(os.path.join(rawdata_dir,sub)) if "ses" in s]
+
+		for ses in session_list:
+
+
+			session_path = os.path.join(rawdata_dir,sub,ses)
+
+			T1w_runs = glob.glob(f"{session_path}/anat/*_run-*_T1w.nii.gz")
+			T2w_runs = glob.glob(f"{session_path}/anat/*_run-*_T2w.nii.gz")
+
+			have_T2 = glob.glob(f"{session_path}/anat/*_T2w.nii.gz")
+			dwi_runs = glob.glob(f"{session_path}/dwi/*dir-PA_run-*_dwi.nii.gz")
+			dwiAP_runs = glob.glob(f"{session_path}/dwi/*dir-AP_run-*_dwi.nii.gz")
+			
+
+			rs_runs = glob.glob(f"{session_path}/func/*task-rest_run-*_bold.nii.gz")
+			b0_runs = glob.glob(f"{session_path}/fmap/*run-*_magnitude1.nii.gz")
+
+			if len(have_T2) != 0:
+				T2_tot += 1
+
+			if len(T1w_runs) != 0:
+				correct_T1 +=1
+				print("correct T1 run")
+
+			if len(T2w_runs) != 0:
+				correct_T2 +=1
+				#print("correct T2 run")
+
+			if len(dwi_runs) != 0:
+				correct_dwi += 1 
+				print(f"{sub} - {ses} : correct dwi")
+
+			if len(dwiAP_runs) != 0:
+				correct_dwiAP +=1
+				print(f"{sub} - {ses} : correct dwi AP")
+
+			if len(rs_runs) != 0:
+				correct_rs += 1
+				print(f"{sub} - {ses} : correct rs fmri")
+
+			### BO PAS DE PB
+
+
+
+
+
+
+
+
+			
+
+
+			# if len(T2w_runs) != 0:
+			# 	print(f" {sub} - {ses} : correct run")
+			# if len(T1w_runs) == 0:
+			# 	print("do not correct")
+
+
+
+
+
+
+
+			if os.path.isdir(os.path.join(session_path,'fmap')):
+				# if len(b0_runs) ==0:
+				# 	print(f"{sub} - {ses} : no b0")
+				if len(b0_runs) == 2:
+
+					correct_b0 += 1
+
+					print(f"{sub} - {ses} : correct b0")
+					print(b0_runs)
+
+					fmap_dir = os.path.join(session_path,'fmap')
+
+					filename_run1_nii = [item for item in b0_runs if "run-1" in item][0]
+					filename_run1_json = filename_run1_nii[:-7] + ".json"
+
+					newfilename_run1 = f"{sub}_{ses}_magnitude1"
+
+					print(f"rename {filename_run1_nii} - {newfilename_run1}.nii.gz ")
+
+					os.rename(os.path.join(fmap_dir,filename_run1_nii),os.path.join(fmap_dir,f"{newfilename_run1}.nii.gz"))
+					os.rename(os.path.join(fmap_dir,filename_run1_json),os.path.join(fmap_dir,f"{newfilename_run1}.json"))
+
+					filename_run2_nii = [item for item in b0_runs if "run-2" in item][0]
+					filename_run2_json = filename_run2_nii[:-7] + ".json"
+					newfilename_run2 = f"{sub}_{ses}_phase1"
+
+					print(f"rename {filename_run2_nii} - {newfilename_run2}.nii.gz ")
+
+					os.rename(os.path.join(fmap_dir,filename_run2_nii),os.path.join(fmap_dir,f"{newfilename_run2}.nii.gz"))
+					os.rename(os.path.join(fmap_dir,filename_run2_json),os.path.join(fmap_dir,f"{newfilename_run2}.json"))
+
+
+					#### Hypothèse : run-1 = magnitude, run-2 = phase
+
+
+	print(f"correct T1 : {correct_T1}")
+	print(f"correct T2 : {correct_T2}")
+	print(f"correct dwi : {correct_dwi}")
+	print(f"correct dwiAP : {correct_dwiAP}")
+	print(f"correct rs : {correct_rs}")
+	print(f"correct B0 : {correct_b0}")
+	print(f"total T2  : {T2_tot}")
+
+
+# sub-106GUEMA - ses-post : correct dwi
+## Fichier dédoublé/ Supprimer run-1
+
+guema_dwi_dir = os.path.join(rawdata_dir,"sub-106GUEMA","ses-post","dwi")
+guema_dwi_filename = "sub-106GUEMA_ses-post_acq-64dirs_dir-PA_run-2_dwi"
+guema_dwi_filename2delete = "sub-106GUEMA_ses-post_acq-64dirs_dir-PA_run-1_dwi"
+guema_dwi_new_filename = "sub-106GUEMA_ses-post_acq-64dirs_dir-PA_dwi"
+
+if os.path.isfile(os.path.join(guema_dwi_dir,f"{guema_dwi_filename}.nii.gz")):
+
+
+	os.rename(os.path.join(guema_dwi_dir,f"{guema_dwi_filename}.nii.gz"),os.path.join(guema_dwi_dir,f"{guema_dwi_new_filename}.nii.gz"))
+	os.rename(os.path.join(guema_dwi_dir,f"{guema_dwi_filename}.json"),os.path.join(guema_dwi_dir,f"{guema_dwi_new_filename}.json"))
+	os.rename(os.path.join(guema_dwi_dir,f"{guema_dwi_filename}.bvec"),os.path.join(guema_dwi_dir,f"{guema_dwi_new_filename}.bvec"))
+	os.rename(os.path.join(guema_dwi_dir,f"{guema_dwi_filename}.bval"),os.path.join(guema_dwi_dir,f"{guema_dwi_new_filename}.bval"))
+
+	os.remove(os.path.join(guema_dwi_dir,f"{guema_dwi_filename2delete}.nii.gz"))
+	os.remove(os.path.join(guema_dwi_dir,f"{guema_dwi_filename2delete}.json"))
+	os.remove(os.path.join(guema_dwi_dir,f"{guema_dwi_filename2delete}.bval"))
+	os.remove(os.path.join(guema_dwi_dir,f"{guema_dwi_filename2delete}.bvec"))
+
+# sub-209MORJU - ses-pre : correct dwi
+
+## Fichier dédoublé/ Supprimer run-1
+
+morju_dwi_dir = os.path.join(rawdata_dir,"sub-209MORJU","ses-pre","dwi")
+morju_dwi_filename = "sub-209MORJU_ses-pre_acq-64dirs_dir-PA_run-2_dwi"
+morju_dwi_filename2delete = "sub-209MORJU_ses-pre_acq-64dirs_dir-PA_run-1_dwi"
+morju_dwi_new_filename = "sub-209MORJU_ses-pre_acq-64dirs_dir-PA_dwi"
+
+if os.path.isfile(os.path.join(morju_dwi_dir,f"{morju_dwi_filename}.nii.gz")):
+
+
+	os.rename(os.path.join(morju_dwi_dir,f"{morju_dwi_filename}.nii.gz"),os.path.join(morju_dwi_dir,f"{morju_dwi_new_filename}.nii.gz"))
+	os.rename(os.path.join(morju_dwi_dir,f"{morju_dwi_filename}.json"),os.path.join(morju_dwi_dir,f"{morju_dwi_new_filename}.json"))
+	os.rename(os.path.join(morju_dwi_dir,f"{morju_dwi_filename}.bvec"),os.path.join(morju_dwi_dir,f"{morju_dwi_new_filename}.bvec"))
+	os.rename(os.path.join(morju_dwi_dir,f"{morju_dwi_filename}.bval"),os.path.join(morju_dwi_dir,f"{morju_dwi_new_filename}.bval"))
+
+	os.remove(os.path.join(morju_dwi_dir,f"{morju_dwi_filename2delete}.nii.gz"))
+	os.remove(os.path.join(morju_dwi_dir,f"{morju_dwi_filename2delete}.json"))
+	os.remove(os.path.join(morju_dwi_dir,f"{morju_dwi_filename2delete}.bval"))
+	os.remove(os.path.join(morju_dwi_dir,f"{morju_dwi_filename2delete}.bvec"))
+
+
+
+# sub-423DOCLO - ses-post : correct dwi AP
+# sub-504MEITO - ses-pre : correct dwi
+
+meito_dwi_dir = os.path.join(rawdata_dir,"sub-504MEITO","ses-pre","dwi")
+meito_dwi_filename = "sub-504MEITO_ses-pre_acq-64dirs_dir-PA_run-2_dwi"
+meito_dwi_filename2delete = "sub-504MEITO_ses-pre_acq-64dirs_dir-PA_run-1_dwi"
+meito_dwi_new_filename = "sub-504MEITO_ses-pre_acq-64dirs_dir-PA_dwi"
+
+if os.path.isfile(os.path.join(meito_dwi_dir, f"{meito_dwi_filename}.nii.gz")):
+
+    os.rename(os.path.join(meito_dwi_dir, f"{meito_dwi_filename}.nii.gz"), os.path.join(meito_dwi_dir, f"{meito_dwi_new_filename}.nii.gz"))
+    os.rename(os.path.join(meito_dwi_dir, f"{meito_dwi_filename}.json"), os.path.join(meito_dwi_dir, f"{meito_dwi_new_filename}.json"))
+    os.rename(os.path.join(meito_dwi_dir, f"{meito_dwi_filename}.bvec"), os.path.join(meito_dwi_dir, f"{meito_dwi_new_filename}.bvec"))
+    os.rename(os.path.join(meito_dwi_dir, f"{meito_dwi_filename}.bval"), os.path.join(meito_dwi_dir, f"{meito_dwi_new_filename}.bval"))
+
+    os.remove(os.path.join(meito_dwi_dir, f"{meito_dwi_filename2delete}.nii.gz"))
+    os.remove(os.path.join(meito_dwi_dir, f"{meito_dwi_filename2delete}.json"))
+    os.remove(os.path.join(meito_dwi_dir, f"{meito_dwi_filename2delete}.bval"))
+    os.remove(os.path.join(meito_dwi_dir, f"{meito_dwi_filename2delete}.bvec"))
+
+
+
+doclo_dwi_dir = os.path.join(rawdata_dir, "sub-423DOCLO", "ses-post", "dwi")
+doclo_dwi_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-2_dwi"
+doclo_dwi_filename2delete = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-1_dwi"
+doclo_dwi_new_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_dwi"
+
+if os.path.isfile(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz")):
+
+    os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.nii.gz"))
+    os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.json"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.json"))
+    os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bvec"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bvec"))
+    os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bval"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bval"))
+
+    os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.nii.gz"))
+    os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.json"))
+    os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.bval"))
+    os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.bvec"))
+
+				
+
+
+
+
+
 
 
 
