@@ -507,21 +507,10 @@ if correct_run_time:
 
 
 
-
-
-
-
-			
-
-
 			# if len(T2w_runs) != 0:
 			# 	print(f" {sub} - {ses} : correct run")
 			# if len(T1w_runs) == 0:
 			# 	print("do not correct")
-
-
-
-
 
 
 

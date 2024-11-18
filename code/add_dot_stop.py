@@ -228,7 +228,50 @@ for task in task_list:
 							dim4 = json_data.get("NumberOfTemporalPositions")
 							dim_list.append(dim4)
 
-					print(dim_list)
+					index2keep = dim_list.index(max(dim_list))
+
+
+					print(index2keep)
+
+					if index2keep == 0:
+						index2delete = 1
+					elif index2keep == 1:
+						index2delete = 0
+
+
+					filepath_root2keep = task_runs[index2keep][:-5]
+
+					split_filepath = filepath_root2keep.split("_")
+
+
+					newfilepath_root2keep = "_".join(split_filepath[:-2]) + "_" + split_filepath[-1]
+
+					print(newfilepath_root2keep)
+
+					os.rename(f'{filepath_root2keep}.json',f"{newfilepath_root2keep}.json")
+					os.rename(f'{filepath_root2keep}.nii.gz',f"{newfilepath_root2keep}.nii.gz")
+
+					os.remove(task_runs[index2delete])
+
+					nii2delete = task_runs[index2delete][:-5] + ".nii.gz"
+
+					os.remove(nii2delete)
+
+
+					#newfilepath_nii = task_runs[index2keep][:-4] + ".nii.gz"
+
+
+
+					#os.rename(task_runs,)
+
+
+
+
+
+
+
+
+
 
 						
 #### 511 Dans le cahier d'aquisition : STOP refait après DTI : DTIseries7 et stopseries9 donc on garde series 9					
