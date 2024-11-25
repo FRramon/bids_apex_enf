@@ -4,7 +4,8 @@ import pandas as pd
 import re
 import glob
 import json
-
+from collections import defaultdict
+from datetime import datetime
 
 ########################################
 # This script check bidscoiner conversion, and rename files after run1 run2 if one run2 is found, but no run1
@@ -32,6 +33,70 @@ def search_line(key,line):
 		return value
 	else:
 		return None
+
+def read_time(filepath):
+
+	with open(filepath, 'r') as file:
+			data_file = json.load(file)
+
+			exam_date = data_file.get("Examination date/time", "Field not found")
+
+
+	pattern = r"(\d{4}\.\d{2}\.\d{2}) / (\d{2}:\d{2}:\d{2})"
+		# Find the match
+	match = re.search(pattern, exam_date)
+
+	if match:
+			# Extract date and time parts
+		date_part = match.group(1)
+		time_part = match.group(2)
+			# Combine and convert to datetime object
+		datetime_obj = datetime.strptime(f"{date_part} {time_part}", "%Y.%m.%d %H:%M:%S")
+		return datetime_obj
+	else:
+		print("No match found!")
+
+def get_run_id(filepath):
+	basename = os.path.basename(filepath)
+
+	run_id = basename.split("_")[-2][-1]
+	return run_id
+
+def get_files_run(json_filepath,run_id):
+
+	## /VOlumes... /anat/sub_ses_run-1_T2 json/nii
+
+	ses_dir = os.path.dirname(json_filepath)
+	files2rename = [f for f in os.listdir(ses_dir) if run_id in f]
+
+	return files2rename
+
+def get_files_run_sesdir(ses_dir,run_id):
+
+	## /VOlumes... /anat/sub_ses_run-1_T2 json/nii
+
+	files2rename = [f for f in os.listdir(ses_dir) if run_id in f]
+
+	return files2rename
+
+def rename_run(list_files,run_id):
+
+	## /VOlumes... /anat/sub_ses_run-1_T2 json/nii
+
+	newfiles = []
+
+	for files in list_files:
+
+		rg = r"run-\d+"
+
+		for match in re.findall(rg, files):
+			files_2 = files.replace(match, run_id)
+
+		newfiles.append(files_2)
+
+	return newfiles
+
+
 
 
 def read_par_T1(filepath):
@@ -134,13 +199,13 @@ def read_par_T1(filepath):
 source_data_dir = "/Volumes/My Passport/source_data"
 rawdata_dir = "/Volumes/My Passport/rawdata"
 
-print(os.listdir(rawdata_dir))
+#print(os.listdir(rawdata_dir))
 bidscoiner_history = os.path.join(rawdata_dir,"code","bidscoin","bidscoiner.tsv")
 
 df_bidcoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
 
 
-print(df_bidcoiner_history.columns)
+#print(df_bidcoiner_history.columns)
 
 
 rename_target = False
@@ -444,7 +509,7 @@ if enrich_json:
 
 ## Corrige nom run1 run2 avec les dates
 
-correct_run_time = True
+correct_run_time = False
 if correct_run_time:
 
 	T2_tot = 0
@@ -643,16 +708,151 @@ if os.path.isfile(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz")):
     os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.bvec"))
 
 				
+	
+
+T2_list_file = glob.glob(f"{rawdata_dir}/sub-*/ses-*/anat/*run*")
+
+list_session_dir = list(set([os.path.dirname(s) for s in T2_list_file]))
+
+for session_dir in list_session_dir:
+	## ouvrir tous les run-*_T2w.json, extraire date. 
+
+	## extraire deux dates (garde en memore à quel fichier appartient)
+
+	## min des deux --> run1
+	## max des deux --> run2
+
+	T2_runs_files = glob.glob(f"{session_dir}/*run-*part-phase_T2w.json")
+
+
+	time1 = read_time(T2_runs_files[0])
+	time2 = read_time(T2_runs_files[1])
+
+	time_list = [time1,time2]
+
+
+
+
+	run_id1 = os.path.basename(T2_runs_files[0]).split("_")[-3]
+	run_id2 = os.path.basename(T2_runs_files[1]).split("_")[-3]
+
+
+	if time1 < time2: 
+
+
+		if (run_id1 != "run-1") and (run_id2 != "run-2"):
+
+
+			print(f"rename {run_id1} run 1")
+			print(f"rename {run_id2} run 2")
+
+			files_runid1 = glob.glob(f"{session_dir}/*{run_id1}*")
+			files_runid1_renamed = rename_run(files_runid1,"run-1")
+
+			for i,file in enumerate(files_runid1):
+				os.rename(os.path.join(session_dir,file),os.path.join(session_dir,files_runid1_renamed[i]))
+
+			files_runid2 = glob.glob(f"{session_dir}/*{run_id2}*")
+			files_runid2_renamed = rename_run(files_runid2,"run-2")
+
+			for i,file in enumerate(files_runid2):
+				os.rename(os.path.join(session_dir,file),os.path.join(session_dir,files_runid2_renamed[i]))
+
+
+	if time1 > time2: 
+
+		if (run_id1 != "run-2") and (run_id2 != "run-1"):
+
+
+			print(f"rename {run_id1} run-2")
+			print(f"rename {run_id2} run-1")
+
+
+			files_runid1 = glob.glob(f"{session_dir}/*{run_id1}*")
+			files_runid1_renamed = rename_run(files_runid1,"run-2")
+
+			for i,file in enumerate(files_runid1):
+				os.rename(os.path.join(session_dir,file),os.path.join(session_dir,files_runid1_renamed[i]))
+
+			files_runid2 = glob.glob(f"{session_dir}/*{run_id2}*")
+			files_runid2_renamed = rename_run(files_runid2,"run-1")
+
+			for i,file in enumerate(files_runid2):
+				os.rename(os.path.join(session_dir,file),os.path.join(session_dir,files_runid2_renamed[i]))
+
+dict_correct_field = {
+
+    "Examination date/time": "AcquisitionDateTime",
+    "Reconstruction nr": "ReconstructionNumber",
+    "Scan Duration [sec]": "ScanDuration" ,
+    "Max. number of cardiac phases": "NumberOfCardiacPhases",
+    "Max. number of echoes": "NumberOfEchoes" ,
+    "Max. number of slices/locations": "SliceLocation",
+    "Max. number of dynamics": "NumberOfTemporalPositions",
+    "Max. number of mixes": "NumberOfMixes",
+    "Preparation direction": "MRStackPreparationDirection",
+    "Technique": "SequenceName",
+    "Scan resolution  (x, y)": "ScanResolution",
+    "Scan mode": "MRAcquisitionType",
+    "FOV (ap,fh,rl) [mm]": "FOV",
+    "Water Fat shift [pixels]": "WaterFatShiftPixels",
+    "Angulation midslice(ap,fh,rl)[degr]": "WaterFatShift",
+    "Off Centre midslice(ap,fh,rl) [mm]": "OffCentreMidslice",
+    "Flow compensation <0=no 1=yes> ?": "FlowCompensation",
+    "Presaturation     <0=no 1=yes> ?": "Presaturation",
+    "Phase encoding velocity [cm/sec]": "PhaseEncodingVelocity",
+    "MTC               <0=no 1=yes> ?": "MTC",
+    "SPIR              <0=no 1=yes> ?": "SPIR",
+    "EPI factor        <0,1=no EPI>":  "EPIFactor",
+    "Dynamic scan      <0=no 1=yes> ?": "DynamicScan",
+    "Diffusion         <0=no 1=yes> ?": "Diffusion",
+    "Diffusion echo time [ms]": "DiffusionEchoTime",
+    "Max. number of diffusion values": "NumberOfDiffusionValues",
+    "Max. number of gradient orients": "NumberOfGradientOrients",
+    "Number of label types   <0=no ASL>": "LabelTypeASL"
+}
+
+
+list_delete_field = ["Patient name","Protocol name", "Acquisition nr", "Series Type","Patient position","Repetition time [ms]"]
 
 
 
 
 
+def update_json_fields(json_data, field_mapping, delete_fields):
+    if isinstance(json_data, dict):
+        # Remove keys that are in the delete_fields list
+        json_data = {k: v for k, v in json_data.items() if k not in delete_fields}
+        
+        # Replace keys as per field_mapping
+        updated_json = {field_mapping.get(k, k): update_json_fields(v, field_mapping, delete_fields) for k, v in json_data.items()}
+        return updated_json
+    
+    elif isinstance(json_data, list):
+        return [update_json_fields(i, field_mapping, delete_fields) for i in json_data]
+    
+    else:
+        return json_data
 
 
+json_file_list = glob.glob(f"{rawdata_dir}/sub-*/ses-*/*/*.json")
+
+for file_path in tqdm(json_file_list):
+	# File path (same for input and output)
+#	file_path = "/Volumes/My Passport/rawdata/sub-101VALAL/ses-pre/func/sub-101VALAL_ses-pre_task-stop_bold.json"
+
+	# Read the JSON file
+	with open(file_path, 'r') as infile:
+	    json_data = json.load(infile)
+
+	# Update the JSON (both replacing keys and deleting unwanted fields)
+	updated_json_data = update_json_fields(json_data, dict_correct_field, list_delete_field)
+
+	# Save the updated JSON back to the same file
+	with open(file_path, 'w') as outfile:
+	    json.dump(updated_json_data, outfile, indent=4)
 
 
-### DELETE  ####
 
 
 # source_data_dir = "/Volumes/My Passport/rawdata"

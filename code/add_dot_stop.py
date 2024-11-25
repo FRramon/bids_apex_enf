@@ -54,7 +54,7 @@ def mat2json(mat_file_path,json_file_path):
 
 
 sourcedata_dir =  "/Volumes/My Passport/source_data"
-rawdata_dir = "/Volumes/My Passport/rawdata"
+rawdata_dir = "/Volumes/My Passport/rawdata_sourcename"
 
 bidscoiner_history = os.path.join(rawdata_dir,"code","bidscoin","bidscoiner.tsv")
 df_bidscoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
@@ -64,7 +64,7 @@ df_bidscoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
 task_list = ["dot","stop"]
 csv_data = []
 
-convert_dot_stop = False
+convert_dot_stop = True
 
 if convert_dot_stop:
 
@@ -92,13 +92,12 @@ if convert_dot_stop:
 
 
 			#if sourcedata_dir == "/Volumes/My Passport/source_data":
-			if subject_id == "sub-218LELAM":
+			if subject_id == "sub-203VALMA":
 
 				if len(list_files_task) == 1:
 
 
 					filename = os.path.basename(file)
-
 
 
 					print(f"Convert {subject_id} - {session_id} : {filename}")
@@ -228,7 +227,7 @@ for task in task_list:
 							dim4 = json_data.get("NumberOfTemporalPositions")
 							dim_list.append(dim4)
 
-					index2keep = dim_list.index(max(dim_list))
+					index2keep = dim_list.index(max(dim_list))  ### Ici on prend l'index du run qui a le plus de temporal position
 
 
 					print(index2keep)
@@ -264,10 +263,7 @@ for task in task_list:
 
 					#os.rename(task_runs,)
 
-
-
-
-
+#### Changer les champs json dot/stop en accord avec les autre json (dwi, func...)
 
 
 

@@ -28,10 +28,11 @@ print(patient_list_rename)
 print(patient_to_process)
 
 
-copysource = False
+copysource = True
 correct_name = False
-
 get_unique_sequences = False
+add_run_label = False
+
 
 if copysource:
 
@@ -39,6 +40,7 @@ if copysource:
 	for patient_name in tqdm(patient_to_process):
 
 		patient_name = "2-03VALMA"
+		print(patient_name)
 
 		if not os.path.isdir(os.path.join(source_data_dir,patient_name)):
 			os.makedirs(os.path.join(source_data_dir,patient_name),exist_ok = True)
@@ -53,6 +55,8 @@ if copysource:
 				os.makedirs(session_dir,exist_ok = True)
 
 			df_seq = pd.read_csv(os.path.join(raw_patient_dir,patient_name,ses,f"sequences_{patient_name}_{ses}.csv"))
+
+			print(df_seq)
 
 			folder_list = df_seq["folder_name"].to_list()
 
@@ -72,10 +76,8 @@ if copysource:
 
 			element_counts = Counter(total_file_list)
 
-
 			non_unique_items = [item for item, count in element_counts.items() if count > 1]
 			unique_items = [item for item, count in element_counts.items() if count == 1]
-
 			count_non_unique_items = [count for item, count in element_counts.items() if count > 1]
 
 
@@ -164,7 +166,6 @@ if get_unique_sequences:
 
 	print(list(set(file_list)))
 
-add_run_label = True
 
 def split_date_time(date_output):
 	date, time = date_output.split(" / ")
@@ -268,21 +269,38 @@ if add_run_label:
 
 						print(f" Right order runs : {right_order_runs}")
 
+### Ici bids map doit être défini et placé dans rawdata/code/bidscoin
 
+# command = "bidscoiner source_data rawdata"
+# subprocess.run(command, shell = True)
 
 		# print(f"{os.path.basename(file)} : {time}")
+mrconvert sub-01_ses-01_acq-64dirs_dir-PA_dwi.nii.gz -fslgrad corrected_bvecs.bvec corrected_bval.bval dwi.mif -force
+dwigradcheck dwi.mif -export_grad_fsl corrected_bvecs.bvec corrected_bval.bval
 
 
 
+dwi2mask dwi.mif mask.mif
+dwi2response tournier dwi.mif wm.txt
+dwi2fod csd dwi.mif wm.txt wmfod.mif
+
+# dwi2response dhollander dwi.mif wm.txt gm.txt csf.txt
+# dwi2fod msmt_csd dwi.mif wm.txt wmfod.mif gm.txt gm.mif csf.txt csf.mif
+mrconvert sub-01_ses-01_acq-64dirs_dir-PA_dwi.nii.gz -fslgrad corrected_bvecs.bvec corrected_bval.bval dwi.mif -force
 
 
 
+mtnormalise wmfod.mif wmfod_norm.mif
+mrconvert sub-01_ses-01_T1w.nii.gz T1_raw.mif
+5ttgen fsl T1_raw.mif 5tt_nocoreg.mif
+
+dwiextract dwi.mif - -bzero | mrmath - mean mean_b0_preprocessed.mif -axis 3
 
 
-
-
-
-
-
-
+mrconvert mean_b0_preprocessed.mif mean_b0_preprocessed.nii.gz
+mrconvert T1_raw.mif T1_raw.nii.gz 
+flirt -in mean_b0_preprocessed.nii.gz -ref T1_raw.nii.gz -dof 6 -omat diff2struct_fsl.mat
+transformconvert diff2struct_fsl.mat mean_b0_preprocessed.nii.gz T1_raw.mif flirt_import diff2struct_mrtrix.txt
+mrtransform T1_raw.mif -linear diff2struct_mrtrix.txt -inverse T1_coreg.mif
+mrtransform 5tt_nocoreg.mif -linear diff2struct_mrtrix.txt -inverse 5tt_coreg.mif
 
