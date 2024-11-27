@@ -9,8 +9,10 @@ import json
 from collections import defaultdict
 from datetime import datetime
 
-source_data_dir = "/Volumes/My Passport/source_data"
-rawdata_dir = "/Volumes/My Passport/rawdata_sourcename"
+source_data_dir = "/Volumes/BackupDisk/APEX/apex_enf/source_data"
+rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata_copy"
+
+rename_participants = True
 
 ## sub-\d+[A-Z]+
 
@@ -31,8 +33,8 @@ def rename_file(list_files,subject_id):
 
 	return newfiles
 
-# 5 derniers supprimer
 
+# 5 derniers supprimer
 # premier element après sub : defini le groupe
 # les deux element après : defini le numéro
 
@@ -44,43 +46,67 @@ dict_group = {
 	"5" : "prema"
 }
 
-#sub-enfca001
+if rename_participants:
 
-subject_list = [s for s in os.listdir(rawdata_dir) if "sub" in s]
+	# renommer rawdata rawdata_original_patient_name
+	# creer un rawdata vide
 
-group_id = [s[4] for s in subject_list]
+
+	## faire des copies au fur et à mesure dans rawdata (créer les dossier va être long (création recursive?))
+
+	subject_list = [s for s in os.listdir(rawdata_dir) if "sub" in s]
+	group_id = [s[4] for s in subject_list]
+
+	# Renaming subjects based on the rules
+	renamed_subjects = []
+	group_count = {key: 0 for key in dict_group.keys()}  # table conversion
+
+	dict_name = {}
+
+	for subject in subject_list:
+		# Extract the group number and group name
+		group_number = subject.split('-')[1][0]  # Get the first digit after "sub-"
+		group_name = dict_group.get(group_number, "unknown")
+
+		# Rename subject
+		match = re.search(r'\d(\d{2})', subject)
+		if match:
+			increment_number =  match.group(1).zfill(3)
+		renamed_subject = f"sub-enf{group_name}{increment_number}"
+		renamed_subjects.append(renamed_subject)
+
+		dict_name[subject] = renamed_subject
+
+		print(f"rename {rawdata_dir}/{subject} : {rawdata_dir}/{renamed_subject}")
+
+		os.rename(f"{rawdata_dir}/{subject}",f"{rawdata_dir}/{renamed_subject}")
+
+	# Display the renamed subjects
+
+	print(renamed_subjects)
+	print(list(dict_name.keys()))
 
 
-# Renaming subjects based on the rules
-renamed_subjects = []
-group_count = {key: 0 for key in dict_group.keys()}  # To keep track of numbering within each group
+	conversion_table = pd.DataFrame(list(dict_name.items()), columns=["original", "renamed"])
 
-dict_name = {}
+	conversion_table.to_csv(f"{rawdata_dir}/equivalence_table_participants.csv",index = False)
 
-for subject in subject_list:
-    # Extract the group number and group name
-    group_number = subject.split('-')[1][0]  # Get the first digit after "sub-"
-    group_name = dict_group.get(group_number, "unknown")
-    
-    # Get the incremented number from the remaining part of the subject ID (after the first 3 characters)
-    group_count[group_number] += 1
-    increment_number = str(group_count[group_number]).zfill(3)  # Ensure 3-digit format
-    
-    # Rename subject
-    renamed_subject = f"sub-enf{group_name}{increment_number}"
-    renamed_subjects.append(renamed_subject)
+	for subject_sourcename in list(dict_name.keys()):
 
-    dict_name[subject] = renamed_subject
+		files2rename = glob.glob(f"{rawdata_dir}/{dict_name[subject_sourcename]}/*/*/*")	
+		print(len(files2rename))
+		renamed_files = rename_file(files2rename,dict_name[subject_sourcename])
+		print(len(renamed_files))
 
-# Display the renamed subjects
-print(renamed_subjects)
+		for i,file in enumerate(files2rename):
+			print(f"rename {file} : {renamed_files[i]}")
+			os.rename(file,renamed_files[i])
 
-for subject_sourcename in subject_list:
 
-	files2rename = glob.glob(f"{rawdata_dir}/{subject_sourcename}/*/*/*")	
-	print(len(files2rename))
-	renamed_files = rename_file(files2rename,dict_name[subject_sourcename])
-	print(len(renamed_files))
+
+
+
+
 
 	#print(renamed_files)
 

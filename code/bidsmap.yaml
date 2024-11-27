@@ -1,0 +1,650 @@
+# --------------------------------------------------------------------------------
+# This is a template bidsmap with the key-value mappings for the different BIDS
+# datatypes (anat, func, dwi, etc). The datatype attributes are the keys that map
+# onto the BIDS labels. The bidsmap data-structure should be 5 levels deep:
+#
+# dict       : dict     : list     : dict        : dict
+# dataformat : datatype : run-item : bidsmapping : mapping-data
+#
+# NB:
+# 1) This bidsmap is intended to be used by the bidsmapper for data discovery.
+#    Although generally not recommended, it can also be used directly by the bidscoiner
+# 2) This bidsmap is tailored to standard data acquisitions at the Donders Centre for
+#    Cognitive Neuroimaging (DCCN). You may consider (Institute) users may create their
+#    own bidsmap_[template].yaml or bidsmap_[sample].yaml file
+#
+# For more information, see: https://bidscoin.readthedocs.io
+# --------------------------------------------------------------------------------
+
+$schema: schema.json
+
+
+Options:
+# --------------------------------------------------------------------------------
+# General BIDScoin and plugin options
+# --------------------------------------------------------------------------------
+  bidscoin:
+    version: 4.4.0                  # BIDScoin version (should correspond with the version in pyproject.toml)
+    subprefix: sub-                 # The subject prefix of the source data
+    sesprefix: ses-                 # The session prefix of the source data
+    bidsignore:                              # List of entries that are added to the .bidsignore file (for more info, see BIDS specifications), e.g. [extra_data/, pet/, myfile.txt, yourfile.csv]
+    - extra_data/
+    - sub-*_ct.*
+    unknowntypes: [extra_data]      # A list of datatypes that are converted to BIDS-like datatype folders
+    ignoretypes: [exclude]          # A list of datatypes that are excluded / not converted to BIDS
+    notderivative: []               # A list of suffixes that should not be considered as a derivative datatype
+    unzip: null                     # Wildcard pattern to select tarball/zip-files in the source folders that need to be unzipped (in a tempdir) to expose the data, e.g. '*.tar.gz'
+  plugins:                          # List of plugins with plugin-specific key-value pairs (that can be used by the plugin)
+    dcm2niix2bids:                  # See dcm2niix -h and https://www.nitrc.org/plugins/mwiki/index.php/dcm2nii:MainPage#General_Usage for more info
+      command: dcm2niix             # Command to run dcm2niix, e.g. "module add dcm2niix/1.0.20180622; dcm2niix" or "PATH=/opt/dcm2niix/bin:$PATH; dcm2niix" or /opt/dcm2niix/bin/dcm2niix or 'C:\"Program Files"\dcm2niix\dcm2niix.exe' (use quotes to deal with whitespaces in the path)
+      args: -b y -z y -i n -l n     # Argument string that is passed to dcm2niix. Tip: SPM users may want to use '-z n' (which produces unzipped NIfTI's, see dcm2niix -h for more information)
+      anon: y                       # Set this anonymization flag to 'y' to round off age and discard acquisition date from the meta data
+      meta: [.json, .tsv, .tsv.gz]  # The file extensions of the equally named metadata sourcefiles that are copied over to the BIDS sidecar files
+      fallback: y                   # Appends unhandled dcm2niix suffixes to the `acq` label if 'y' (recommended, else the suffix data is discarded)
+
+
+DICOM:
+# --------------------------------------------------------------------------------
+# DICOM key-value heuristics (DICOM fields that are mapped to the BIDS labels)
+# --------------------------------------------------------------------------------
+  subject: <<filepath:/source_data_one/sub-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as subject-label, e.g. <PatientID>
+  session: <<filepath:/source_data_one/sub-.*?/ses-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as session-label, e.g. <StudyID>
+
+  anat:     [] # ----------------------- All anatomical runs --------------------
+  func:     [] # ----------------------- All functional runs --------------------
+  perf:     [] # ----------------------- All perfusion runs ---------------------
+  dwi:     [] # ----------------------- All diffusion runs ---------------------
+  fmap:     [] # ----------------------- All fieldmap runs ----------------------
+  pet:     [] # ----------------------- All PET runs ---------------------------
+  eeg:     [] # ----------------------- All EEG data ---------------------------
+  ieeg:     [] # ----------------------- All iEEG data --------------------------
+  extra_data:     [] # ----------------------- All extra data -------------------------
+  exclude:     [] # ----------------------- Data that will be left out -------------
+PAR:
+# --------------------------------------------------------------------------------
+# PAR key-value heuristics (Philips PAR fields that are mapped to the BIDS labels)
+# --------------------------------------------------------------------------------
+  subject: <<filepath:/source_data/sub-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as subject-label, e.g. <PatientID>
+  session: <<filepath:/source_data/sub-.*?/ses-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as session-label, e.g. <StudyID>
+
+  anat:       # ----------------------- All anatomical runs --------------------
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/3DT1-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+                                        # The fullpath name of the PAR file from which the attributes are read. Serves also as a look-up key to find a run in the bidsmap
+      protocol_name: 3DT1
+      tech: T1TFE
+      scan_mode: 3D
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+                                        # See: schema/rules/files/raw/anat.yaml
+      task: null
+      acq: ''
+      ce: null
+      rec: ''
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]   # This BIDS value list will be shown as a dropdown menu in the bidseditor with the first (empty) item selected (as indicated by the last item, i.e. 0)
+      chunk: null
+      suffix: T1w
+    meta: {}
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/3DT1-*-1_run-*.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+                                        # The fullpath name of the PAR file from which the attributes are read. Serves also as a look-up key to find a run in the bidsmap
+      protocol_name: 3DT1
+      tech: T1TFE
+      scan_mode: 3D
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+                                        # See: schema/rules/files/raw/anat.yaml
+      task: null
+      acq: ''
+      ce: null
+      rec: ''
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]   # This BIDS value list will be shown as a dropdown menu in the bidseditor with the first (empty) item selected (as indicated by the last item, i.e. 0)
+      chunk: null
+      suffix: T1w
+    meta: {}
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/T2GREph-SENSE-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      protocol_name: T2GREph SENSE
+      series_type: Image   MRSERIES
+      tech: FFE
+      diffusion: '0'
+      scan_mode: MS
+      flow_compensation: '1'
+      max_echoes: '1'
+      prep_direction: Right-Left
+    bids:
+      suffix: T2w
+      task: null
+      acq: ''
+      ce: null
+      rec: ''
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]   # This BIDS value list will be shown as a dropdown menu in the bidseditor with the first (empty) item selected (as indicated by the last item, i.e. 0)
+      chunk: null
+    meta: {}
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/T2GREph-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      protocol_name: T2GREph
+      series_type: Image   MRSERIES
+      tech: FFE
+      diffusion: '0'
+      scan_mode: MS
+      flow_compensation: '1'
+      max_echoes: '1'
+      prep_direction: Right-Left
+    bids:
+      suffix: T2w
+      task: null
+      acq: null
+      ce: null
+      rec: ''
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]   # This BIDS value list will be shown as a dropdown menu in the bidseditor with the first (empty) item selected (as indicated by the last item, i.e. 0)
+      chunk: null
+    meta: {}
+  func:       # ----------------------- All functional runs --------------------
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/dot-SENSE-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      series_type: Image   MRSERIES
+      protocol_name: dot SENSE
+      tech: FEEPI
+      diffusion: '0'
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+                                        # See: schema/rules/files/raw/func.yaml
+      task: dot
+      acq: ''
+      ce: null
+      dir: null
+      rec: null
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: bold
+    meta:
+      <<:
+        TaskName: <ProtocolName>
+        B0FieldSource: null
+        B0FieldIdentifier: null
+      TaskName: apex026
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/dot-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      series_type: Image   MRSERIES
+      protocol_name: dot 
+      tech: FEEPI
+      diffusion: '0'
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+                                        # See: schema/rules/files/raw/func.yaml
+      task: dot
+      acq: ''
+      ce: null
+      dir: null
+      rec: null
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: bold
+    meta:
+      <<:
+        TaskName: <ProtocolName>
+        B0FieldSource: null
+        B0FieldIdentifier: null
+      TaskName: apex026
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/rs-multi-echo-SENSE-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      series_type: Image   MRSERIES
+      protocol_name: rs_multi_echo SENSE
+      tech: FEEPI
+      diffusion: '0'
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '3'
+      prep_direction: Anterior-Posterior
+    bids:
+                                        # See: schema/rules/files/raw/func.yaml
+      task: rest
+      acq: ''
+      ce: null
+      dir: null
+      rec: ''
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: bold
+    meta:
+      <<:
+        TaskName: <ProtocolName>
+        B0FieldSource: null
+        B0FieldIdentifier: null
+      TaskName: apex026
+      B0FieldSource: null
+      B0FieldIdentifier: null
+
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/rs-multi-echo-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      series_type: Image   MRSERIES
+      protocol_name: rs_multi_echo 
+      tech: FEEPI
+      diffusion: '0'
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '3'
+      prep_direction: Anterior-Posterior
+    bids:
+                                        # See: schema/rules/files/raw/func.yaml
+      task: rest
+      acq: ''
+      ce: null
+      dir: null
+      rec: ''
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: bold
+    meta:
+      <<:
+        TaskName: <ProtocolName>
+        B0FieldSource: null
+        B0FieldIdentifier: null
+      TaskName: apex026
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/stop-SENSE-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      series_type: Image   MRSERIES
+      protocol_name: stop SENSE
+      tech: FEEPI
+      diffusion: '0'
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+                                        # See: schema/rules/files/raw/func.yaml
+      task: stop
+      acq: ''
+      ce: null
+      dir: null
+      rec: ''
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: bold
+    meta:
+      <<:
+        TaskName: <ProtocolName>
+        B0FieldSource: null
+        B0FieldIdentifier: null
+      TaskName: apex026
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/stop-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      series_type: Image   MRSERIES
+      protocol_name: stop
+      tech: FEEPI
+      diffusion: '0'
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+                                        # See: schema/rules/files/raw/func.yaml
+      task: stop
+      acq: ''
+      ce: null
+      dir: null
+      rec: ''
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: bold
+    meta:
+      <<:
+        TaskName: <ProtocolName>
+        B0FieldSource: null
+        B0FieldIdentifier: null
+      TaskName: apex026
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/WIP-stop-SENSE-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      series_type: Image   MRSERIES
+      protocol_name: WIP stop SENSE
+      tech: FEEPI
+      diffusion: '0'
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+                                        # See: schema/rules/files/raw/func.yaml
+      task: stop
+      acq: ''
+      ce: null
+      dir: null
+      rec: ''
+      run: <<>>
+      echo: null
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: bold
+    meta:
+      <<:
+        TaskName: <ProtocolName>
+        B0FieldSource: null
+        B0FieldIdentifier: null
+      TaskName: apex026
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  perf:     [] # ----------------------- All perfusion runs ---------------------
+  dwi:        # ----------------------- All diffusion runs ---------------------
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/WIP-DTI2-3-SENSE-*-1_run-*.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      diffusion: '1'
+      series_type: Image   MRSERIES
+      protocol_name: WIP DTI2-3 SENSE
+      tech: DwiSE
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+      acq: 64dirs
+      rec: null
+      dir: PA
+      run: <<>>
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: dwi
+    meta:
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/WIP-DTI2-3-SENSE-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      diffusion: '1'
+      series_type: Image   MRSERIES
+      protocol_name: WIP DTI2-3 SENSE
+      tech: DwiSE
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+      acq: 64dirs
+      rec: null
+      dir: PA
+      run: <<>>
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: dwi
+    meta:
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/DTI2-3-ok-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      diffusion: '1'
+      series_type: Image   MRSERIES
+      protocol_name: DTI2-3-ok
+      tech: DwiSE
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+      acq: 64dirs
+      rec: null
+      dir: PA
+      run: <<>>
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: dwi
+    meta:
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/DTI2-3-alt-*-1.PAR 
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      diffusion: '1'
+      series_type: Image   MRSERIES
+      protocol_name: DTI2-3-alt
+      tech: DwiSE
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+      acq: 64dirs
+      rec: null
+      dir: PA
+      run: <<>>
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: dwi
+    meta:
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/DTI2-3-alt-topup-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      diffusion: '1'
+      series_type: Image   MRSERIES
+      protocol_name: DTI2-3-alt-topup
+      tech: DwiSE
+      scan_resolution: '[128 128]'
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+      acq: 6dirs
+      rec: null
+      dir: AP
+      run: <<>>
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: dwi
+    meta:
+      B0FieldSource: null
+      B0FieldIdentifier: null
+  fmap:       # ----------------------- All fieldmap runs ----------------------
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/WIP-B0MAP-*-1_run-*.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      series_type: Image   MRSERIES
+      protocol_name: WIP B0MAP
+      tech: T1FFE
+      diffusion: '0'
+      scan_mode: MS
+      max_slices: '35'
+      flow_compensation: '1'
+      max_echoes: '1'
+
+      prep_direction: Right-Left
+    bids:
+      acq: null
+      run: <<>>
+      chunk: null
+      suffix: magnitude1
+    meta:
+      B0FieldIdentifier: null
+      IntendedFor: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/WIP-B0MAP-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      series_type: Image   MRSERIES
+      protocol_name: WIP B0MAP
+      tech: T1FFE
+      diffusion: '0'
+      scan_mode: MS
+      max_slices: '35'
+      flow_compensation: '1'
+      max_echoes: '1'
+      prep_direction: Right-Left
+    bids:
+      acq: null
+      run: <<>>
+      chunk: null
+      suffix: magnitude1
+    meta:
+      B0FieldIdentifier: null
+      IntendedFor: null
+  extra_data:     [] # ----------------------- All extra data -------------------------
+  exclude:     [] # ----------------------- Data that will be left out -------------
+SPAR:
+# ---------------------------------------------------------------------------------
+# SPAR key-value heuristics (Philips MRS fields that are mapped to the BIDS labels)
+# ---------------------------------------------------------------------------------
+  subject: <<filepath:/source_data/sub-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as subject-label, e.g. <PatientID>
+  session: <<filepath:/source_data/sub-.*?/ses-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as session-label, e.g. <StudyID>
+
+  mrs:     [] # ---------------------- All spectroscopy runs ------------------
+  extra_data:     [] # ----------------------- All extra data -------------------------
+  exclude:     [] # ----------------------- Data that will be left out -------------
+Twix:
+# ---------------------------------------------------------------------------------
+# Twix key-value heuristics (Siemens MRS fields that are mapped to the BIDS labels)
+# ---------------------------------------------------------------------------------
+  subject: <<filepath:/source_data/sub-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as subject-label, e.g. <PatientID>
+  session: <<filepath:/source_data/sub-.*?/ses-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as session-label, e.g. <StudyID>
+
+  mrs:     [] # ---------------------- All spectroscopy runs ------------------
+  extra_data:     [] # ----------------------- All extra data -------------------------
+  exclude:     [] # ----------------------- Data that will be left out -------------
+Pfile:
+# ------------------------------------------------------------------------------
+# P-file key-value heuristics (GE MRS fields that are mapped to the BIDS labels)
+# ------------------------------------------------------------------------------
+  subject: <<filepath:/source_data/sub-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as subject-label, e.g. <PatientID>
+  session: <<filepath:/source_data/sub-.*?/ses-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as session-label, e.g. <StudyID>
+
+  mrs:     [] # ---------------------- All spectroscopy runs ------------------
+  extra_data:     [] # ----------------------- All extra data -------------------------
+  exclude:     [] # ----------------------- Data that will be left out -------------
+Nibabel:
+# --------------------------------------------------------------------------------
+# Nibabel key-value heuristics (header fields that are mapped to the BIDS labels)
+# --------------------------------------------------------------------------------
+  subject: <<filepath:/source_data/sub-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as subject-label, e.g. <PatientID>
+  session: <<filepath:/source_data/sub-.*?/ses-(.*?)/>> # This filesystem property extracts the subject label from the source directory. NB: Any property or attribute can be used as session-label, e.g. <StudyID>
+
+  anat:     [] # ----------------------- All anatomical runs --------------------
+  func:     [] # ----------------------- All functional runs --------------------
+  perf:     [] # ----------------------- All perfusion runs ---------------------
+  dwi:     [] # ----------------------- All diffusion runs ---------------------
+  fmap:     [] # ----------------------- All fieldmap runs ----------------------
+  extra_data:     [] # ----------------------- All extra data -------------------------
+  exclude:     [] # ----------------------- Data that will be left out -------------
