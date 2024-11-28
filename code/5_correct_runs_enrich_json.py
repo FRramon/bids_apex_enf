@@ -88,8 +88,6 @@ def rename_run(list_files,run_id):
 	return newfiles
 
 
-
-
 def read_par_T1(filepath):
 
 
@@ -190,22 +188,29 @@ rename_target = False ## OK change 8 / 6 by lenght of dir + k OK ## attention re
 enrich_json = False # OK
 correct_run_time = False # OK
 correct_run_time_T2 = False #  OK 
-change_fied_json = True
+change_fied_json = False
+
+generate_conversion_table = True
+check_conversion = True
 
 source_data_dir = "/Volumes/BackupDisk/APEX/apex_enf/source_data"
 rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
 
+
+# rawdata_dir = "/Volumes/My Passport/rawdata"
+# source_data_dir = "/Volumes/My Passport/source_data"
+
 bidscoiner_history = os.path.join(rawdata_dir,"code","bidscoin","bidscoiner.tsv")
 df_bidcoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
 
-print(df_bidcoiner_history)
+# print(df_bidcoiner_history)
 
 if rename_target:
 	df_list = []
 
 	subject_list = [s for s in os.listdir(source_data_dir) if "sub" in s]
 
-	for sub in subject_list:
+	for sub in tqdm(subject_list):
 		print(sub)
 		session_list = [s for s in os.listdir(os.path.join(source_data_dir,sub)) if "ses" in s]
 
@@ -268,18 +273,18 @@ if rename_target:
 
 
 			# Step 1: Find rows where 'targets' contains both "T2w" and "run"
-			t2w_and_run = sub_df_patient[sub_df_patient['targets'].str.contains("T2w", case=False, na=False) & 
+			t2w_and_run = sub_df_patient[sub_df_patient['targets'].str.contains("T2starw", case=False, na=False) & 
 			                             sub_df_patient['targets'].str.contains("run", case=False, na=False)]
 
 			# Step 2: Find rows where 'targets' contains "T2w" but does NOT contain "run"
-			t2w_no_run = sub_df_patient[sub_df_patient['targets'].str.contains("T2w", case=False, na=False) & 
+			t2w_no_run = sub_df_patient[sub_df_patient['targets'].str.contains("T2starw", case=False, na=False) & 
 			                            ~sub_df_patient['targets'].str.contains("run", case=False, na=False)]
 
 			# Display results
 			if len(t2w_and_run['targets'].to_list()) != 0:
 				if len(t2w_no_run['targets'].to_list()) != 0:
 
-					print("have multiple T2w : rename first one to run_1")
+					print("have multiple T2starw : rename first one to run_1")
 
 					print(t2w_no_run["targets"])
 
@@ -295,7 +300,6 @@ if rename_target:
 						print(f"rename {files} to {new_filename}")
 
 						new_filename_list.append(new_filename)
-
 
 					sub_df_patient.loc[sub_df_patient["targets"] == t2w_no_run["targets"].iloc[0], "targets_renamed"] = str(new_filename_list)[1:-1]
 					#sub_df_patient["targets_renamed"] = str(new_filename_list)[1:-1]
@@ -465,10 +469,10 @@ if rename_target:
 
 
 
-sequences_info = pd.read_csv(os.path.join(rawdata_dir,"sequences_info.csv"))
 
 
 if enrich_json:
+	sequences_info = pd.read_csv(os.path.join(rawdata_dir,"sequences_info.csv"))
 
 	for file,datatype,targets in tqdm(zip(sequences_info["source"],sequences_info["datatype"],sequences_info["targets_renamed"]),total = len(sequences_info)):
 
@@ -525,7 +529,7 @@ if correct_run_time:
 
 	subject_list = [s for s in os.listdir(rawdata_dir) if "sub" in s]
 
-	for sub in subject_list:
+	for sub in tqdm(subject_list):
 		session_list = [s for s in os.listdir(os.path.join(rawdata_dir,sub)) if "ses" in s]
 
 		for ses in session_list:
@@ -534,9 +538,9 @@ if correct_run_time:
 			session_path = os.path.join(rawdata_dir,sub,ses)
 
 			T1w_runs = glob.glob(f"{session_path}/anat/*_run-*_T1w.nii.gz")
-			T2w_runs = glob.glob(f"{session_path}/anat/*_run-*_T2w.nii.gz")
+			T2w_runs = glob.glob(f"{session_path}/anat/*_run-*_T2starw.nii.gz")
 
-			have_T2 = glob.glob(f"{session_path}/anat/*_T2w.nii.gz")
+			have_T2 = glob.glob(f"{session_path}/anat/*_T2starw.nii.gz")
 			dwi_runs = glob.glob(f"{session_path}/dwi/*dir-PA_run-*_dwi.nii.gz")
 			dwiAP_runs = glob.glob(f"{session_path}/dwi/*dir-AP_run-*_dwi.nii.gz")
 			
@@ -724,7 +728,7 @@ if correct_run_time_T2:
 		## min des deux --> run1
 		## max des deux --> run2
 
-		T2_runs_files = glob.glob(f"{session_dir}/*run-*part-phase_T2w.json")
+		T2_runs_files = glob.glob(f"{session_dir}/*run-*part-phase_T2starw.json")
 
 
 		time1 = read_time(T2_runs_files[0])
@@ -869,32 +873,250 @@ if change_fied_json:
 		    json.dump(updated_json_data, outfile, indent=4)
 
 
+if generate_conversion_table:
+
+	data_records = []
+
+	patient_list = [s for s in os.listdir(os.path.join(source_data_dir)) if "sub" in s]
+
+	for subject_id in tqdm(patient_list):
+		session_list = [s for s in os.listdir(os.path.join(source_data_dir,subject_id)) if 'ses' in s]
+
+		for session_id in session_list:
+
+			files_path = os.path.join(source_data_dir,subject_id,session_id)
+			print(files_path)
+			source_par = glob.glob(f'{files_path}/*.PAR')
+			print(source_par)
+
+			if all("T1" not in s for s in source_par):
+				have_T1_source = 0
+				have_T1_raw = None
+				conversion_error_T1 = None
+
+			if all("T2" not in s for s in source_par):
+				have_T2_source = 0
+				have_T2_raw = None
+				have_multiple_T2 = None
+				conversion_error_T2 = None
+
+			if all("rs-multi-echo" not in s for s in source_par):
+				have_rs_source = 0
+				have_rs_raw = None
+				conversion_error_rs = None
+
+			if all("dot" not in s for s in source_par):
+				have_dot_source = 0
+				have_dot_raw = None
+				conversion_error_dot = None
+
+			if all("stop" not in s for s in source_par):
+				have_stop_source = 0
+				have_stop_raw = None
+				conversion_error_stop = None
+
+			if all("DTI2-3" not in s for s in source_par):
+				have_dwi_source = 0
+				have_dwi_raw = None
+				conversion_error_dwi = None
+
+			if all("DTI2-3-alt-topup" not in s for s in source_par):
+				have_dwiAP_source = 0
+				have_dwiAP_raw = None
+				conversion_error_dwiAP = None
+
+			if all("B0MAP" not in s for s in source_par):
+				have_b0_source = 0
+				have_b0_raw = None
+				conversion_error_b0 = None
+
+			for file in source_par:
+		
+		## filtre avec 3DT1, T2; dot,stop,rs-multi-echo, DTI2-3-alt without toput, DTI2-3-alt-topup,B0MAP
+
+				if "3DT1" in file:
+
+					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"anat",f"{subject_id}_{session_id}_T1w.nii.gz")
+
+					if os.path.isfile(raw_file):
+						have_T1_source = 1
+						have_T1_raw = 1
+						conversion_error_T1 = 0
+					else:
+						have_T1_source = 1
+						have_T1_raw = 0
+						conversion_error_T1 = 1
+
+				if "T2" in file:
+
+					raw_files = glob.glob(os.path.join(rawdata_dir,subject_id,session_id,"anat","*T2starw*.nii.gz"))
+
+					if len(raw_files) == 2:
+						have_T2_source = 1
+						have_T2_raw = 1
+						have_multiple_T2 = 0
+						conversion_error_T2 = 0
+					elif len(raw_files) == 4:
+						have_T2_source = 1
+						have_T2_raw = 1
+						have_multiple_T2 = 1	
+						conversion_error_T2 = 0
+
+					if len(raw_files) == 0:
+						have_T2_source = 1
+						have_T2_raw = 0
+						have_multiple_T2 = 0
+						conversion_error_T2 = 1
+
+				if "dot" in file:
+
+					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"func",f"{subject_id}_{session_id}_task-dot_bold.nii.gz")
+
+					if os.path.isfile(raw_file):
+						have_dot_source = 1
+						have_dot_raw = 1
+						conversion_error_dot = 0
+					else:
+						have_dot_source = 1
+						have_dot_raw = 0
+						conversion_error_dot= 1
+
+				if "stop" in file:
+
+					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"func",f"{subject_id}_{session_id}_task-stop_bold.nii.gz")
+
+					if os.path.isfile(raw_file):
+						have_stop_source = 1
+						have_stop_raw = 1
+						conversion_error_stop = 0
+					else:
+						have_stop_source = 1
+						have_stop_raw = 0
+						conversion_error_stop= 1
 
 
-# source_data_dir = "/Volumes/My Passport/rawdata"
-# template_to_delete = ["sub-*/ses-*/anat/sub-*_ses-*_acq-T2GREph_rec-apex026_*_T2w*","sub-*/ses-*/anat/sub-*_ses-*_acq-T2GREph_rec-apex026_T2w*"]
-# folder_to_delete = ["sub-*/ses-*/anat"]
-# tsv = "sub-*/ses-*/sub-415BERMA_ses-pre_scans.tsv"
+				if "rs-multi-echo" in file:
+
+					raw_files = glob.glob(os.path.join(rawdata_dir,subject_id,session_id,"func",f"{subject_id}_{session_id}_task-rest*_bold.nii.gz"))
+
+					if len(raw_files) == 3:
+
+						have_rs_source = 1
+						have_rs_raw = 1
+						conversion_error_rs = 0
+					else:
+						have_rs_source = 1
+						have_rs_raw = 0
+						conversion_error_rs = 1
 
 
-# tsv_list = glob.glob(os.path.join(source_data_dir,tsv))
-# for tsv_file in tsv_list:
-# 	df_tsv = pd.read_csv(tsv_file,sep = '\t')
-# 	print(df_tsv)
-# 	df_tsv = df_tsv[~df_tsv['filename'].str.contains("apex026", na=False)]
-# 	df_tsv.to_csv(tsv_file)
+				if "DTI2-3" in file and not "topup" in file:
+
+					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"dwi",f"{subject_id}_{session_id}_acq-64dirs_dir-PA_dwi.nii.gz")
+
+					if os.path.isfile(raw_file):
+						have_dwi_source = 1
+						have_dwi_raw = 1
+						conversion_error_dwi = 0
+					else:
+						have_dwi_source = 1
+						have_dwi_raw = 0
+						conversion_error_dwi= 1
+
+				if "DTI2-3-alt-topup" in file:
+
+					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"dwi",f"{subject_id}_{session_id}_acq-6dirs_dir-AP_dwi.nii.gz")
+
+					if os.path.isfile(raw_file):
+						have_dwiAP_source = 1
+						have_dwiAP_raw = 1
+						conversion_error_dwiAP = 0
+					else:
+						have_dwiAP_source = 1
+						have_dwiAP_raw = 0
+						conversion_error_dwiAP = 1
+
+				
+
+				if "B0MAP" in file:
+
+					raw_files = glob.glob(os.path.join(rawdata_dir,subject_id,session_id,"fmap","*.nii.gz"))
+
+					if len(raw_files) == 2:
+						have_b0_source = 1
+						have_b0_raw = 1
+						conversion_error_b0 = 0
+					else:
+						have_b0_source = 1
+						have_b0_raw = 0
+						conversion_error_b0 = 1
+
+			record = {
+				"subject_id": subject_id,
+				"session_id": session_id,
+				"have_T1_source": have_T1_source,
+				"have_T1_raw": have_T1_raw,
+				"conversion_error_T1": conversion_error_T1,
+				"have_T2_source": have_T2_source,
+				"have_T2_raw": have_T2_raw,
+				"have_multiple_T2": have_multiple_T2,
+				"conversion_error_T2": conversion_error_T2,
+				"have_rs_source": have_rs_source,
+				"have_rs_raw": have_rs_raw,
+				"conversion_error_rs": conversion_error_rs,
+				"have_dot_source": have_dot_source,
+				"have_dot_raw": have_dot_raw,
+				"conversion_error_dot": conversion_error_dot,
+				"have_stop_source": have_stop_source,
+				"have_stop_raw": have_stop_raw,
+				"conversion_error_stop": conversion_error_stop,
+				"have_dwi_source": have_dwi_source,
+				"have_dwi_raw": have_dwi_raw,
+				"conversion_error_dwi": conversion_error_dwi,
+				"have_dwiAP_source": have_dwiAP_source,
+				"have_dwiAP_raw": have_dwiAP_raw,
+				"conversion_error_dwiAP": conversion_error_dwiAP,
+				"have_b0_source": have_b0_source,
+				"have_b0_raw": have_b0_raw,
+				"conversion_error_b0": conversion_error_b0
+			}
+
+			data_records.append(record)
+
+	df = pd.DataFrame(data_records)
+
+
+	session_order = ["ses-pre", "ses-post", "ses-postdiff"]
+	df["session_id"] = pd.Categorical(df["session_id"], categories=session_order, ordered=True)
+	df_sorted = df.sort_values(by=["subject_id","session_id"])
+	df_sorted.to_csv(f"{rawdata_dir}/check_conversion.csv")
+
+
+if check_conversion:
+
+	### On s'attend ici à retrouver VALMA resting state ici (error nb not divisible : erreur transfert) 
+
+	conversion_table = pd.read_csv(f"{rawdata_dir}/check_conversion.csv")
+
+
+	## load conversion table
+	## check for each conversion_error
+	fields = ["conversion_error_T1","conversion_error_T2","conversion_error_rs","conversion_error_dot","conversion_error_stop","conversion_error_dwi","conversion_error_dwiAP","conversion_error_b0"]
+
+	for i,row in conversion_table.iterrows():
+
+		subject_id = row["subject_id"]
+		session_id = row["session_id"]
+
+		for field in fields	:
+			if row[field] == 1:
+				field_suffix = field.split("_")[-1]
+
+				print(f"Problem conversion : {field_suffix} - {subject_id} - {session_id}")
 
 
 
 
-
-# for template in folder_to_delete:
-# 	files_to_delete = glob.glob(os.path.join(source_data_dir,template))
-# 	print(files_to_delete)
-
-	#for file in files_to_delete:
-
-		# os.rmdir(os.path.join(source_data_dir,file))
 
 
 

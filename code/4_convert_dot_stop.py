@@ -62,7 +62,7 @@ df_bidscoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
 task_list = ["dot","stop"]
 csv_data = []
 
-convert_dot_stop = False
+convert_dot_stop = True
 correct_runs = True
 
 ### A la place aller chercher dans source_data. glob etc
@@ -189,8 +189,6 @@ if convert_dot_stop:
 	csv_output_path = os.path.join(rawdata_dir, "command_history_dot_stop.csv")
 	df_csv_output = pd.DataFrame(csv_data, columns=['source_file', 'destination'])
 	df_csv_output.to_csv(csv_output_path, index=False)
-
-
 
 
 

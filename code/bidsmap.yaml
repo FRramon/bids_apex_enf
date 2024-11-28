@@ -136,7 +136,7 @@ PAR:
       max_echoes: '1'
       prep_direction: Right-Left
     bids:
-      suffix: T2w
+      suffix: T2starw
       task: null
       acq: ''
       ce: null
@@ -162,7 +162,7 @@ PAR:
       max_echoes: '1'
       prep_direction: Right-Left
     bids:
-      suffix: T2w
+      suffix: T2starw
       task: null
       acq: null
       ce: null

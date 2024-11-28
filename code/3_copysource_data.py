@@ -27,6 +27,8 @@ raw_source_dir = "/Volumes/BackupDisk/APEX/apex_enf/sub-enf"
 if not os.path.isdir(source_data_dir):
 	os.mkdir(source_data_dir)
 
+
+
 exclude_patient_list = [s for s in os.listdir(source_data_dir)] + ["AWELLI1V1S011","AWELLI1V1S108","CHAUFFEMACHINE","FCOSPDS15","TESTSTOPAS3","TESTSTOPAS4"]
 patient_list_orig = [s for s in os.listdir(raw_patient_dir) if s not in exclude_patient_list]
 patient_list_rename  = ["sub-" + ''.join(s.split('-')) for s in patient_list_orig]
@@ -34,14 +36,15 @@ patient_list_rename  = ["sub-" + ''.join(s.split('-')) for s in patient_list_ori
 patient_to_process = [s for s in patient_list_orig if s not in exclude_patient_list]
 
 print(patient_list_orig)
+
+print(patient_list_orig)
 print(patient_list_rename)
 print(patient_to_process)
 
 copysource = False
-correct_name = False
+correct_name = True
 get_unique_sequences = False
 add_run_label = False
-
 run_bidscoin = True
 
 if copysource:
@@ -49,8 +52,10 @@ if copysource:
 	print("===================================================")
 	print("==========        COPY IN SOURCE DATA     =========")
 	print("===================================================\n")
+	print(patient_to_process)
 
 	for patient_name in tqdm(patient_to_process):
+		print(patient_name)
 
 		#patient_name = "2-03VALMA"
 		#print(patient_name)
@@ -69,7 +74,7 @@ if copysource:
 
 			df_seq = pd.read_csv(os.path.join(raw_patient_dir,patient_name,ses,f"sequences_{patient_name}_{ses}.csv"))
 
-			print(df_seq)
+			# print(df_seq)
 
 			folder_list = df_seq["folder_name"].to_list()
 
@@ -91,6 +96,9 @@ if copysource:
 			unique_items = [item for item, count in element_counts.items() if count == 1]
 			count_non_unique_items = [count for item, count in element_counts.items() if count > 1]
 
+			### check size of files, if equal, just copy the first file (duplicate)
+			### else : print(not duplicate)
+
 			for item in unique_items:
 
 				file2rename = [f for f in total_filepath_list if os.path.basename(f) == item]
@@ -100,23 +108,59 @@ if copysource:
 					shutil.copy(file,session_dir)
 
 			for item in non_unique_items:
+				file2rename = [f for f in total_filepath_list if os.path.basename(f) == item if ".REC" in f]
 
-				file2rename = [f for f in total_filepath_list if os.path.basename(f) == item]
+				# if len(file2rename) == 0:
+				# 	print(file2rename)
 
-				for i,f in enumerate(file2rename):
+				if len(file2rename) == 2:
 
-					if os.path.basename(f).split(".")[-1] == "PAR" or os.path.basename(f).split(".")[-1] == "REC" :
-
-						if not os.path.basename(f)[0] == ".":
-
-							newfilename = os.path.basename(f).split(".")[0] + f"_run-{i+1}." + os.path.basename(f).split(".")[1]
-
-						elif len(os.path.basename(f))>2:
+					print(file2rename)
 
 
-							newfilename = os.path.basename(f).split(".")[1] + f"_run-{i+1}." + os.path.basename(f).split(".")[2]
+					sizefiles = [os.path.getsize(f) for f in file2rename]
+				# #print(len(sizefiles))
 
-						shutil.copy(f,os.path.join(os.path.dirname(f),newfilename))
+				# if len(sizefiles) == 0:
+				# 	print(file2rename)
+
+					if sizefiles[0] == sizefiles[1]:
+						print("same size")  #### tranfert 2 fois, on en prend un des 2
+
+						shutil.copy(file2rename[0],session_dir)
+
+					else:  ### erreur transfert, on copie le + "lourd"
+
+						imax = sizefiles.index(max(sizefiles))
+						shutil.copy(file2rename[imax],session_dir)
+
+				# print(sizefiles)
+
+
+				## extract les REC
+				# calcul taille des rec. Si egale print( duplicate)
+
+				#Sinon print not duplicate
+
+
+			# for item in non_unique_items:
+
+			# 	file2rename = [f for f in total_filepath_list if os.path.basename(f) == item]
+
+			# 	for i,f in enumerate(file2rename):
+
+			# 		if os.path.basename(f).split(".")[-1] == "PAR" or os.path.basename(f).split(".")[-1] == "REC" :
+
+			# 			if not os.path.basename(f)[0] == ".":
+
+			# 				newfilename = os.path.basename(f).split(".")[0] + f"_run-{i+1}." + os.path.basename(f).split(".")[1]
+
+			# 			elif len(os.path.basename(f))>2:
+
+
+			# 				newfilename = os.path.basename(f).split(".")[1] + f"_run-{i+1}." + os.path.basename(f).split(".")[2]
+
+			# 			shutil.copy(f,os.path.join(os.path.dirname(f),newfilename))
 
 if correct_name:
 
@@ -207,7 +251,7 @@ if add_run_label:
 
 	patient_list = [s for s in os.listdir(os.path.join(source_data_dir)) if "sub" in s]
 
-	for sub in patient_list:
+	for sub in tqdm(patient_list):
 		session_list = [s for s in os.listdir(os.path.join(source_data_dir,sub)) if 'ses' in s]
 
 		for ses in session_list:

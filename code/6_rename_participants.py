@@ -8,9 +8,10 @@ import glob
 import json
 from collections import defaultdict
 from datetime import datetime
+import shutil
 
 source_data_dir = "/Volumes/BackupDisk/APEX/apex_enf/source_data"
-rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata_copy"
+rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
 
 rename_participants = True
 
@@ -39,18 +40,19 @@ def rename_file(list_files,subject_id):
 # les deux element après : defini le numéro
 
 dict_group = {
-	"1" : "ca",
-	"2" : "ci",
-	"3" : "mt",
-	"4" : "pc",
-	"5" : "prema"
+	"1" : "ca1",
+	"2" : "ci2",
+	"3" : "mt3",
+	"4" : "pc4",
+	"5" : "prema5"
 }
 
 if rename_participants:
 
-	# renommer rawdata rawdata_original_patient_name
-	# creer un rawdata vide
+	if not os.path.isdir(f'{rawdata_dir}_original_ids'):
 
+		os.rename(rawdata_dir,f'{rawdata_dir}_original_ids')
+		shutil.copytree(f'{rawdata_dir}_original_ids',rawdata_dir)
 
 	## faire des copies au fur et à mesure dans rawdata (créer les dossier va être long (création recursive?))
 
@@ -103,9 +105,7 @@ if rename_participants:
 			os.rename(file,renamed_files[i])
 
 
-
-
-
+### add rename scans/participants.tsv
 
 
 	#print(renamed_files)

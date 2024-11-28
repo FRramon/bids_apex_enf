@@ -29,7 +29,7 @@ raw_structure_dir = "/Volumes/BackupDisk/APEX/apex_enf/raw_structure"
 
 
 
-df_recpar = pd.read_csv(os.path.join(docs_dir,"/scan_folders_recpar.csv"))
+df_recpar = pd.read_csv(os.path.join(docs_dir,"scan_folders_recpar.csv"))
 df  = df_recpar
 df["concat_apex_id"] = df["subject_id"] + "_" + df["patient_name"]
 
