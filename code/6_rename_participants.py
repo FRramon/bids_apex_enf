@@ -13,7 +13,9 @@ import shutil
 source_data_dir = "/Volumes/BackupDisk/APEX/apex_enf/source_data"
 rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
 
+
 rename_participants = True
+rename_tsv = False
 
 ## sub-\d+[A-Z]+
 

@@ -28,7 +28,6 @@ if not os.path.isdir(source_data_dir):
 	os.mkdir(source_data_dir)
 
 
-
 exclude_patient_list = [s for s in os.listdir(source_data_dir)] + ["AWELLI1V1S011","AWELLI1V1S108","CHAUFFEMACHINE","FCOSPDS15","TESTSTOPAS3","TESTSTOPAS4"]
 patient_list_orig = [s for s in os.listdir(raw_patient_dir) if s not in exclude_patient_list]
 patient_list_rename  = ["sub-" + ''.join(s.split('-')) for s in patient_list_orig]
@@ -41,11 +40,14 @@ print(patient_list_orig)
 print(patient_list_rename)
 print(patient_to_process)
 
-copysource = False
-correct_name = True
+copysource = True
+correct_name = False	
 get_unique_sequences = False
 add_run_label = False
-run_bidscoin = True
+run_bidscoin = False
+
+
+patient_to_process = ["2-04HEBTO"]
 
 if copysource:
 
@@ -54,7 +56,13 @@ if copysource:
 	print("===================================================\n")
 	print(patient_to_process)
 
+	#patient_to_process = ["2-03VALMA"]
+
 	for patient_name in tqdm(patient_to_process):
+
+
+		
+
 		print(patient_name)
 
 		#patient_name = "2-03VALMA"
@@ -65,74 +73,186 @@ if copysource:
 
 		session_list = [s for s in os.listdir(os.path.join(raw_patient_dir,patient_name)) if "ses" in s]
 
+		session_list = ["ses-postdiff"]
+
 		for ses in session_list:
 
-			session_dir = os.path.join(source_data_dir,patient_name,ses)
+			if patient_name == "2-04HEBTO" and ses == "ses-postdiff": #### special case 
+				print("special copy")
 
-			if not os.path.isdir(session_dir):
-				os.makedirs(session_dir,exist_ok = True)
+				session_dir = os.path.join(source_data_dir,patient_name,ses)
 
-			df_seq = pd.read_csv(os.path.join(raw_patient_dir,patient_name,ses,f"sequences_{patient_name}_{ses}.csv"))
+				if not os.path.isdir(session_dir):
+					os.makedirs(session_dir,exist_ok = True)
 
-			# print(df_seq)
+					### 3DT1 : sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-3DT1-3-1	-- > 3DT1-3-1
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-3DT1-3-1/*")):
+						shutil.copy(file,session_dir)
 
-			folder_list = df_seq["folder_name"].to_list()
+					### T2* : sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-T2GREph-SENSE-4-1	--> T2-4-1
 
-			total_file_list = []
-			total_filepath_list = []
+					for file in  glob.glob(os.path.join(raw_source_dir,"sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-T2GREph-SENSE-4-1/*")):
+						shutil.copy(file,session_dir)
 
-			for folder in folder_list:
+					### rs : sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-rs-multi-echo-SENSE-5-1	--> rs-5-1
 
-				file_list = os.listdir(os.path.join(raw_source_dir,folder))
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-rs-multi-echo-SENSE-5-1/*")):
+						shutil.copy(file,session_dir)
+
+					### stop : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-6-1-stop-SENSE	-- stop-6-1
+					
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-6-1-stop-SENSE/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "2-04HEBTO-stop-SENSE-6-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "2-04HEBTO-stop-SENSE-6-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						# shutil.copy(file,session_dir)
+
+					### b0 : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-7-1-WIP-B0MAP	--> b0-7-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-7-1-WIP-B0MAP/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "2-04HEBTO-WIP-B0MAP-7-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "2-04HEBTO-WIP-B0MAP-7-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+					### dwi : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-8-1-WIP-DTI2-3-SENSE	--> dwi 8-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-8-1-WIP-DTI2-3-SENSE/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "2-04HEBTO-WIP-DTI2-3-SENSE-8-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "2-04HEBTO-WIP-DTI2-3-SENSE-8-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+					### T2* : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-3-1-T2GREph-SENSE	--> T2-9-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-3-1-T2GREph-SENSE/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "2-04HEBTO-T2GREph-SENSE-9-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "2-04HEBTO-T2GREph-SENSE-9-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+				if os.path.isdir(os.path.join(source_data_dir,"sub-204HEBTO")):
+
+					shutil.copytree(session_dir,os.path.join(source_data_dir,"sub-204HEBTO","ses-postdiff"))
+					shutil.rmtree(os.path.dirname(session_dir))
+
+				### copy dbiex-4-1 in dot dot-SENSE-4-1
+				### copy dbiex-5-1 in rs (pb slice) rs-multi-echo-SENSE-5-1
+				## copy dbiex-6-1 in stop stop-SENSE-6-1
+				## copy dbiex-7-1 in b0 WIP-B0MAP-7-1
+				## copy dbiex-81 in dwi WIP-DTI2-3-SENSE-8-1
+
+			else:
+
+				session_dir = os.path.join(source_data_dir,patient_name,ses)
+
+				if not os.path.isdir(session_dir):
+					os.makedirs(session_dir,exist_ok = True)
+
+				df_seq = pd.read_csv(os.path.join(raw_patient_dir,patient_name,ses,f"sequences_{patient_name}_{ses}.csv"))
+
+				# print(df_seq)
+
+				folder_list = df_seq["folder_name"].to_list()
+
+				total_file_list = []
+				total_filepath_list = []
+
+				for folder in folder_list:
+
+					file_list = os.listdir(os.path.join(raw_source_dir,folder))
 
 
-				for file in file_list:
-					total_file_list.append(file)
-					total_filepath_list.append(os.path.join(raw_source_dir,folder,file))
+					for file in file_list:
+						total_file_list.append(file)
+						total_filepath_list.append(os.path.join(raw_source_dir,folder,file))
 
-			element_counts = Counter(total_file_list)
+				element_counts = Counter(total_file_list)
 
-			non_unique_items = [item for item, count in element_counts.items() if count > 1]
-			unique_items = [item for item, count in element_counts.items() if count == 1]
-			count_non_unique_items = [count for item, count in element_counts.items() if count > 1]
+				non_unique_items = [item for item, count in element_counts.items() if count > 1]
+				unique_items = [item for item, count in element_counts.items() if count == 1]
+				count_non_unique_items = [count for item, count in element_counts.items() if count > 1]
+				print("non unique")
+				print(non_unique_items)
+				print("unique")
+				print(unique_items)
 
-			### check size of files, if equal, just copy the first file (duplicate)
-			### else : print(not duplicate)
-
-			for item in unique_items:
-
-				file2rename = [f for f in total_filepath_list if os.path.basename(f) == item]
-
-				for file in file2rename:
-
-					shutil.copy(file,session_dir)
-
-			for item in non_unique_items:
-				file2rename = [f for f in total_filepath_list if os.path.basename(f) == item if ".REC" in f]
-
-				# if len(file2rename) == 0:
-				# 	print(file2rename)
-
-				if len(file2rename) == 2:
-
-					print(file2rename)
+				### check size of files, if equal, just copy the first file (duplicate)
+				### else : print(not duplicate)
 
 
-					sizefiles = [os.path.getsize(f) for f in file2rename]
-				# #print(len(sizefiles))
 
-				# if len(sizefiles) == 0:
-				# 	print(file2rename)
+				for item in unique_items:
 
-					if sizefiles[0] == sizefiles[1]:
-						print("same size")  #### tranfert 2 fois, on en prend un des 2
+					file2rename = [f for f in total_filepath_list if os.path.basename(f) == item  and "DBIEX" not in f] # and "DBIEX not in f"
 
-						shutil.copy(file2rename[0],session_dir)
+					for file in file2rename:
 
-					else:  ### erreur transfert, on copie le + "lourd"
+						shutil.copy(file,session_dir)
 
-						imax = sizefiles.index(max(sizefiles))
-						shutil.copy(file2rename[imax],session_dir)
+				for item in non_unique_items:
+					file2rename = [f for f in total_filepath_list if os.path.basename(f) == item if ".REC" in f]
+
+					# if len(file2rename) == 0:
+					# 	print(file2rename)
+
+					if len(file2rename) == 2:
+
+						print(file2rename)
+
+						sizefiles = [os.path.getsize(f) for f in file2rename]
+					# #print(len(sizefiles))
+
+					# if len(sizefiles) == 0:
+					# 	print(file2rename)
+
+						if sizefiles[0] == sizefiles[1]:
+							print("same size")  #### tranfert 2 fois, on en prend un des 2
+
+							shutil.copy(file2rename[0],session_dir)
+
+						else:  ### erreur transfert, on copie le + "lourd"
+
+							imax = sizefiles.index(max(sizefiles))
+							shutil.copy(file2rename[imax],session_dir)
+
+					file2rename = [f for f in total_filepath_list if os.path.basename(f) == item if ".PAR" in f]
+
+					# if len(file2rename) == 0:
+					# 	print(file2rename)
+
+					if len(file2rename) == 2:
+
+						print(file2rename)
+
+						sizefiles = [os.path.getsize(f) for f in file2rename]
+					# #print(len(sizefiles))
+
+					# if len(sizefiles) == 0:
+					# 	print(file2rename)
+
+						if sizefiles[0] == sizefiles[1]:
+							print("same size")  #### tranfert 2 fois, on en prend un des 2
+
+							shutil.copy(file2rename[0],session_dir)
+
+						else:  ### erreur transfert, on copie le + "lourd"
+
+							imax = sizefiles.index(max(sizefiles))
+							shutil.copy(file2rename[imax],session_dir)
 
 				# print(sizefiles)
 
@@ -141,6 +261,8 @@ if copysource:
 				# calcul taille des rec. Si egale print( duplicate)
 
 				#Sinon print not duplicate
+
+
 
 
 			# for item in non_unique_items:
@@ -299,7 +421,6 @@ if add_run_label:
 					print("time points are equal")
 
 				else:
-
 
 					right_order_runs = (series_order_bool == time_order_bool)
 

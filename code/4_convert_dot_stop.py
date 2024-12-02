@@ -59,10 +59,10 @@ rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
 bidscoiner_history = os.path.join(rawdata_dir,"code","bidscoin","bidscoiner.tsv")
 df_bidscoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
 
-task_list = ["dot","stop"]
+task_list = ["dot"]
 csv_data = []
 
-convert_dot_stop = True
+convert_dot_stop = False
 correct_runs = True
 
 ### A la place aller chercher dans source_data. glob etc
@@ -127,6 +127,9 @@ if convert_dot_stop:
 				eng.addpath('/Users/francoisramon/dicm2nii')  
 				eng.dicm2nii(input_dir, output_dir, nargout=0)
 				eng.quit()
+
+
+				eng.dicm2nii("/Volumes/BackupDisk/APEX/apex_enf/source_data/sub-523GUYPA/ses-post/5-23GUYPA-DTI2-3-alt-topup-8-1.PAR","/Volumes/BackupDisk/APEX/apex_enf/source_data/sub-523GUYPA/ses-post",nargout = 0)
 
 						# CONVERT MAT FILE TO JSON
 
@@ -201,10 +204,16 @@ if convert_dot_stop:
 if correct_runs:
 	subject_list = [s for s in os.listdir(rawdata_dir) if "sub" in s]
 
+	#subject_list = ["sub-227JOUAN"]
+
 	for task in task_list:
 
 		for sub in subject_list:
+
+
 			session_list = [s for s in os.listdir(os.path.join(rawdata_dir,sub)) if "ses" in s]
+
+			#session_list = ["ses-pre"]
 
 			for ses in session_list:
 

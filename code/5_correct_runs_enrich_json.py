@@ -6,6 +6,8 @@ import glob
 import json
 from collections import defaultdict
 from datetime import datetime
+import subprocess
+import shutil
 
 ########################################
 # This script check bidscoiner conversion, and rename files after run1 run2 if one run2 is found, but no run1
@@ -190,11 +192,14 @@ correct_run_time = False # OK
 correct_run_time_T2 = False #  OK 
 change_fied_json = False
 
+correct_fmap_epi = False
+
 generate_conversion_table = True
 check_conversion = True
 
 source_data_dir = "/Volumes/BackupDisk/APEX/apex_enf/source_data"
 rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
+base_dir =  "/Volumes/BackupDisk/APEX/apex_enf"
 
 
 # rawdata_dir = "/Volumes/My Passport/rawdata"
@@ -517,7 +522,6 @@ if enrich_json:
 if correct_run_time:
 
 	T2_tot = 0
-
 	correct_T1 = 0
 	correct_T2 = 0
 	correct_dwi = 0
@@ -542,7 +546,7 @@ if correct_run_time:
 
 			have_T2 = glob.glob(f"{session_path}/anat/*_T2starw.nii.gz")
 			dwi_runs = glob.glob(f"{session_path}/dwi/*dir-PA_run-*_dwi.nii.gz")
-			dwiAP_runs = glob.glob(f"{session_path}/dwi/*dir-AP_run-*_dwi.nii.gz")
+			dwiAP_runs = glob.glob(f"{session_path}/fmap/*dir-AP_run-*_epi.nii.gz")
 			
 
 			rs_runs = glob.glob(f"{session_path}/func/*task-rest_run-*_bold.nii.gz")
@@ -627,6 +631,64 @@ if correct_run_time:
 	print(f"total T2  : {T2_tot}")
 
 
+if correct_fmap_epi:
+
+	epi_files = glob.glob(f"{source_data_dir}/sub-*/ses-*/*DTI2-3-alt-topup*.PAR")
+
+	temp_dir = os.path.join(base_dir,"temp_epi")
+	if not os.path.isdir(temp_dir):
+		os.mkdir(temp_dir)
+
+
+	for file in tqdm(epi_files):
+
+		print(file)
+
+		command = f"dcm2niix -o {temp_dir} -f %n_%f_%p_%4s  {file} "
+		print(command)
+		subprocess.run(command, shell = True)
+
+
+	bv_files = glob.glob(f"{temp_dir}/*.bv*")
+
+	for file in bv_files:
+
+		split_file = os.path.basename(file).split("_")
+
+
+		patient_name = split_file[0]
+		session_id = split_file[1]
+
+		patient_id = "sub-" + patient_name.replace("-","")
+		print(patient_id)
+
+		if patient_id == "sub-4":
+			patient_id = "sub-410WISLO"
+			session_id = split_file[2]
+
+		if patient_id == "sub-143HIUEMA":
+			patient_id = "sub-143HUEMA"
+
+
+		## recupere extension
+
+		extension = os.path.basename(file)[-4:]
+
+		newfilename = f"{patient_id}_{session_id}_acq-6dirs_dir-AP_epi." + extension
+		destination = os.path.join(rawdata_dir,patient_id,session_id,"fmap")
+
+		if not os.path.isfile(os.path.join(destination,newfilename)):
+
+			shutil.copy(file,os.path.join(destination,newfilename))
+
+
+
+
+
+
+	### patient name --> Recorriger
+
+
 # sub-106GUEMA - ses-post : correct dwi
 ## Fichier dédoublé/ Supprimer run-1
 
@@ -693,11 +755,10 @@ if os.path.isfile(os.path.join(meito_dwi_dir, f"{meito_dwi_filename}.nii.gz")):
     os.remove(os.path.join(meito_dwi_dir, f"{meito_dwi_filename2delete}.bvec"))
 
 
-
-doclo_dwi_dir = os.path.join(rawdata_dir, "sub-423DOCLO", "ses-post", "dwi")
-doclo_dwi_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-2_dwi"
-doclo_dwi_filename2delete = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-1_dwi"
-doclo_dwi_new_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_dwi"
+doclo_dwi_dir = os.path.join(rawdata_dir, "sub-423DOCLO", "ses-post", "fmap")
+doclo_dwi_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-2_epi"
+doclo_dwi_filename2delete = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-1_epi"
+doclo_dwi_new_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_epi"
 
 if os.path.isfile(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz")):
 
@@ -711,10 +772,13 @@ if os.path.isfile(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz")):
     os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.bval"))
     os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.bvec"))
 
+
+#here
+
 				
 if correct_run_time_T2:
 
-	T2_list_file = glob.glob(f"{rawdata_dir}/sub-*/ses-*/anat/*run*")
+	T2_list_file = glob.glob(f"{rawdata_dir}/sub-*/ses-*/anat/*run*T2starw*")
 
 	list_session_dir = list(set([os.path.dirname(s) for s in T2_list_file]))
 
@@ -1025,7 +1089,7 @@ if generate_conversion_table:
 
 				if "DTI2-3-alt-topup" in file:
 
-					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"dwi",f"{subject_id}_{session_id}_acq-6dirs_dir-AP_dwi.nii.gz")
+					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"fmap",f"{subject_id}_{session_id}_acq-6dirs_dir-AP_epi.nii.gz")
 
 					if os.path.isfile(raw_file):
 						have_dwiAP_source = 1
@@ -1040,7 +1104,7 @@ if generate_conversion_table:
 
 				if "B0MAP" in file:
 
-					raw_files = glob.glob(os.path.join(rawdata_dir,subject_id,session_id,"fmap","*.nii.gz"))
+					raw_files = glob.glob(os.path.join(rawdata_dir,subject_id,session_id,"fmap","*1.nii.gz"))
 
 					if len(raw_files) == 2:
 						have_b0_source = 1

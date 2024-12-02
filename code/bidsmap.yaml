@@ -525,33 +525,6 @@ PAR:
     meta:
       B0FieldSource: null
       B0FieldIdentifier: null
-  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/DTI2-3-alt-topup-*-1.PAR
-    properties:
-      filepath: ''
-      filename: ''
-      filesize: ''
-      nrfiles: null
-    attributes:
-      diffusion: '1'
-      series_type: Image   MRSERIES
-      protocol_name: DTI2-3-alt-topup
-      tech: DwiSE
-      scan_resolution: '[128 128]'
-      scan_mode: MS
-      flow_compensation: '0'
-      max_echoes: '1'
-      prep_direction: Anterior-Posterior
-    bids:
-      acq: 6dirs
-      rec: null
-      dir: AP
-      run: <<>>
-      part: ['', mag, phase, real, imag, 0]
-      chunk: null
-      suffix: dwi
-    meta:
-      B0FieldSource: null
-      B0FieldIdentifier: null
   fmap:       # ----------------------- All fieldmap runs ----------------------
   - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/WIP-B0MAP-*-1_run-*.PAR
     properties:
@@ -602,6 +575,33 @@ PAR:
     meta:
       B0FieldIdentifier: null
       IntendedFor: null
+  - provenance: /Volumes/My Passport/source_data/sub-*/ses-*/DTI2-3-alt-topup-*-1.PAR
+    properties:
+      filepath: ''
+      filename: ''
+      filesize: ''
+      nrfiles: null
+    attributes:
+      diffusion: '1'
+      series_type: Image   MRSERIES
+      protocol_name: DTI2-3-alt-topup
+      tech: DwiSE
+      scan_resolution: '[128 128]'
+      scan_mode: MS
+      flow_compensation: '0'
+      max_echoes: '1'
+      prep_direction: Anterior-Posterior
+    bids:
+      acq: 6dirs
+      rec: null
+      dir: AP
+      run: <<>>
+      part: ['', mag, phase, real, imag, 0]
+      chunk: null
+      suffix: epi
+    meta:
+      B0FieldSource: null
+      B0FieldIdentifier: null
   extra_data:     [] # ----------------------- All extra data -------------------------
   exclude:     [] # ----------------------- Data that will be left out -------------
 SPAR:
