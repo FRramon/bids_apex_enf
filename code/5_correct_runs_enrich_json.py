@@ -190,15 +190,15 @@ rename_target = False ## OK change 8 / 6 by lenght of dir + k OK ## attention re
 enrich_json = False # OK
 correct_run_time = False # OK
 correct_run_time_T2 = False #  OK 
-change_fied_json = False
+change_field_json = True
 
 correct_fmap_epi = False
 
-generate_conversion_table = True
-check_conversion = True
+generate_conversion_table = False
+check_conversion = False
 
 source_data_dir = "/Volumes/BackupDisk/APEX/apex_enf/source_data"
-rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
+rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata_original_ids"
 base_dir =  "/Volumes/BackupDisk/APEX/apex_enf"
 
 
@@ -640,13 +640,13 @@ if correct_fmap_epi:
 		os.mkdir(temp_dir)
 
 
-	for file in tqdm(epi_files):
+	# for file in tqdm(epi_files):
 
-		print(file)
+	# 	print(file)
 
-		command = f"dcm2niix -o {temp_dir} -f %n_%f_%p_%4s  {file} "
-		print(command)
-		subprocess.run(command, shell = True)
+	# 	command = f"dcm2niix -o {temp_dir} -f %n_%f_%p_%4s  {file} "
+	# 	print(command)
+	# 	subprocess.run(command, shell = True)
 
 
 	bv_files = glob.glob(f"{temp_dir}/*.bv*")
@@ -668,6 +668,9 @@ if correct_fmap_epi:
 
 		if patient_id == "sub-143HIUEMA":
 			patient_id = "sub-143HUEMA"
+
+		if patient_id == "sub-406MALAX":
+			patient_id = "sub-406HALAX"
 
 
 		## recupere extension
@@ -764,8 +767,8 @@ if os.path.isfile(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz")):
 
     os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.nii.gz"))
     os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.json"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.json"))
-    os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bvec"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bvec"))
-    os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bval"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bval"))
+   # os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bvec"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bvec"))
+   # os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bval"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bval"))
 
     os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.nii.gz"))
     os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.json"))
@@ -882,7 +885,7 @@ def update_json_fields(json_data, field_mapping, delete_fields):
         return json_data
 
 
-if change_fied_json:
+if change_field_json:
 
 	dict_correct_field = {
 
@@ -922,11 +925,12 @@ if change_fied_json:
 	json_file_list = glob.glob(f"{rawdata_dir}/sub-*/ses-*/*/*.json")
 
 	for file_path in tqdm(json_file_list):
+		print(file_path)
 		# File path (same for input and output)
 	#	file_path = "/Volumes/My Passport/rawdata/sub-101VALAL/ses-pre/func/sub-101VALAL_ses-pre_task-stop_bold.json"
 
 		# Read the JSON file
-		with open(file_path, 'r') as infile:
+		with open(file_path, 'r',encoding = "utf-8") as infile:
 		    json_data = json.load(infile)
 
 		# Update the JSON (both replacing keys and deleting unwanted fields)

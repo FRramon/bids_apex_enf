@@ -59,10 +59,10 @@ rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
 bidscoiner_history = os.path.join(rawdata_dir,"code","bidscoin","bidscoiner.tsv")
 df_bidscoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
 
-task_list = ["dot"]
+task_list = ["dot","stop"]
 csv_data = []
 
-convert_dot_stop = False
+convert_dot_stop = True
 correct_runs = True
 
 ### A la place aller chercher dans source_data. glob etc
@@ -79,6 +79,9 @@ if convert_dot_stop:
 		list_files2process = files_df["source"].to_list()
 
 		list_files2process = glob.glob(f"{sourcedata_dir}/sub-*/ses-*/*{task}*.PAR")
+
+		### ICI ajouter : il ne doit pas y avoir de file dot/stop dans rawdata --> glob glob doit etre vide
+
 
 		print(list_files2process)
 
@@ -101,92 +104,96 @@ if convert_dot_stop:
 			list_files_task = glob.glob(f"{source_path}/*{task}*.PAR")
 			print(list_files_task)
 
+			existing_file = glob.glob(f"{rawdata_dir}/{subject_id}/{session_id}/*{task}*.nii.gz")
+
+			if len(existing_file) == 0:
 
 
 
-			if len(list_files_task) == 1:
 
-				#if len(list_files_task) == 1:
+				if len(list_files_task) == 1:
 
-
-				filename = os.path.basename(file)
+					#if len(list_files_task) == 1:
 
 
-				print(f"Convert {subject_id} - {session_id} : {filename}")
+					filename = os.path.basename(file)
 
 
-				input_dir = file
-				output_dir = os.path.join(rawdata_dir,subject_id,session_id,"func")
-
-				if not os.path.isdir(output_dir):
-					os.makedirs(output_dir)
-
-					# RUN DICM2NII
-
-				eng = matlab.engine.start_matlab()
-				eng.addpath('/Users/francoisramon/dicm2nii')  
-				eng.dicm2nii(input_dir, output_dir, nargout=0)
-				eng.quit()
+					print(f"Convert {subject_id} - {session_id} : {filename}")
 
 
-				eng.dicm2nii("/Volumes/BackupDisk/APEX/apex_enf/source_data/sub-523GUYPA/ses-post/5-23GUYPA-DTI2-3-alt-topup-8-1.PAR","/Volumes/BackupDisk/APEX/apex_enf/source_data/sub-523GUYPA/ses-post",nargout = 0)
+					input_dir = file
+					output_dir = os.path.join(rawdata_dir,subject_id,session_id,"func")
 
-						# CONVERT MAT FILE TO JSON
+					if not os.path.isdir(output_dir):
+						os.makedirs(output_dir)
 
-				mat_file_path = os.path.join(output_dir,"dcmHeaders.mat")
-				json_file_path = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_bold.json")
+						# RUN DICM2NII
 
-				mat2json(mat_file_path,json_file_path)
-				os.remove(mat_file_path)
-
-						# RENAME NII.GZ FILE TO BIDS
-
-				out_nii_file = glob.glob(f'{output_dir}/*{task}*.nii.gz')[0]
-				out_nii_bids_file = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_bold.nii.gz")
-				os.rename(out_nii_file,out_nii_bids_file)
-
-				csv_data.append([file, out_nii_bids_file])
-
-			elif len(list_files_task) == 2: 
-
-				file_position = list_files_task.index(file)
-
-				print(file_position)
-
-				run_id = file_position + 1
-
-				print(f"convert {file} and name it run {run_id}")
+					eng = matlab.engine.start_matlab()
+					eng.addpath('/Users/francoisramon/dicm2nii')  
+					eng.dicm2nii(input_dir, output_dir, nargout=0)
+					eng.quit()
 
 
-				input_dir = file
-				output_dir = os.path.join(rawdata_dir,subject_id,session_id,"func")
+					#eng.dicm2nii("/Volumes/BackupDisk/APEX/apex_enf/source_data/sub-523GUYPA/ses-post/5-23GUYPA-DTI2-3-alt-topup-8-1.PAR","/Volumes/BackupDisk/APEX/apex_enf/source_data/sub-523GUYPA/ses-post",nargout = 0)
 
-				if not os.path.isdir(output_dir):
-					os.makedirs(output_dir)
+							# CONVERT MAT FILE TO JSON
 
-				## RUN DICM2NII
+					mat_file_path = os.path.join(output_dir,"dcmHeaders.mat")
+					json_file_path = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_bold.json")
 
-				eng = matlab.engine.start_matlab()
-				eng.addpath('/Users/francoisramon/dicm2nii')  
-				eng.dicm2nii(input_dir, output_dir, nargout=0)
-				eng.quit()
+					mat2json(mat_file_path,json_file_path)
+					os.remove(mat_file_path)
 
-				## CONVERT MAT FILE TO JSON
+							# RENAME NII.GZ FILE TO BIDS
 
-				mat_file_path = os.path.join(output_dir,"dcmHeaders.mat")
-				json_file_path = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_run-{run_id}_bold.json")
+					out_nii_file = glob.glob(f'{output_dir}/*{task}*.nii.gz')[0]
+					out_nii_bids_file = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_bold.nii.gz")
+					os.rename(out_nii_file,out_nii_bids_file)
+
+					csv_data.append([file, out_nii_bids_file])
+
+				elif len(list_files_task) == 2: 
+
+					file_position = list_files_task.index(file)
+
+					print(file_position)
+
+					run_id = file_position + 1
+
+					print(f"convert {file} and name it run {run_id}")
 
 
-				mat2json(mat_file_path,json_file_path)
-				os.remove(mat_file_path)
+					input_dir = file
+					output_dir = os.path.join(rawdata_dir,subject_id,session_id,"func")
 
-				## RENAME NII.GZ FILE TO BIDS
+					if not os.path.isdir(output_dir):
+						os.makedirs(output_dir)
 
-				out_nii_file = glob.glob(f'{output_dir}/*{task}*_1.nii.gz')[0]  ### ajouter run 
-				out_nii_bids_file = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_run-{run_id}_bold.nii.gz")
+					## RUN DICM2NII
 
-				os.rename(out_nii_file,out_nii_bids_file)
-				csv_data.append([file, out_nii_bids_file])
+					eng = matlab.engine.start_matlab()
+					eng.addpath('/Users/francoisramon/dicm2nii')  
+					eng.dicm2nii(input_dir, output_dir, nargout=0)
+					eng.quit()
+
+					## CONVERT MAT FILE TO JSON
+
+					mat_file_path = os.path.join(output_dir,"dcmHeaders.mat")
+					json_file_path = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_run-{run_id}_bold.json")
+
+
+					mat2json(mat_file_path,json_file_path)
+					os.remove(mat_file_path)
+
+					## RENAME NII.GZ FILE TO BIDS
+
+					out_nii_file = glob.glob(f'{output_dir}/*{task}*_1.nii.gz')[0]  ### ajouter run 
+					out_nii_bids_file = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_run-{run_id}_bold.nii.gz")
+
+					os.rename(out_nii_file,out_nii_bids_file)
+					csv_data.append([file, out_nii_bids_file])
 
 
 	csv_output_path = os.path.join(rawdata_dir, "command_history_dot_stop.csv")
@@ -195,7 +202,7 @@ if convert_dot_stop:
 
 
 
-# files2delete = glob.glob(f"{rawdata_dir}/sub-*/ses-*/func/*stop*")
+# files2delete = glob.glob(f"{rawdata_dir}/sub-*/ses-*/func/*dot*")
 # print(files2delete)
 
 # for files in files2delete:

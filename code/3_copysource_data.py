@@ -40,14 +40,13 @@ print(patient_list_orig)
 print(patient_list_rename)
 print(patient_to_process)
 
-copysource = True
+copysource = False
 correct_name = False	
 get_unique_sequences = False
-add_run_label = False
-run_bidscoin = False
+add_run_label = True
+run_bidscoin = True
 
-
-patient_to_process = ["2-04HEBTO"]
+#patient_to_process = ["2-04HEBTO"]
 
 if copysource:
 
@@ -73,7 +72,7 @@ if copysource:
 
 		session_list = [s for s in os.listdir(os.path.join(raw_patient_dir,patient_name)) if "ses" in s]
 
-		session_list = ["ses-postdiff"]
+		#session_list = ["ses-postdiff"]
 
 		for ses in session_list:
 

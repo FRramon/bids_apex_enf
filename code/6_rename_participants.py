@@ -15,7 +15,8 @@ rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
 
 
 rename_participants = True
-rename_tsv = False
+rename_tsv = True
+rename_summary_file = True
 
 ## sub-\d+[A-Z]+
 
@@ -35,6 +36,11 @@ def rename_file(list_files,subject_id):
 		newfiles.append(files_2)
 
 	return newfiles
+
+def replace_ids_in_string(input_string, mapping):
+	for original, renamed in mapping.items():
+		input_string = input_string.replace(original, renamed)
+	return input_string
 
 
 # 5 derniers supprimer
@@ -75,7 +81,7 @@ if rename_participants:
 		# Rename subject
 		match = re.search(r'\d(\d{2})', subject)
 		if match:
-			increment_number =  match.group(1).zfill(3)
+			increment_number =  match.group(1).zfill(2)
 		renamed_subject = f"sub-enf{group_name}{increment_number}"
 		renamed_subjects.append(renamed_subject)
 
@@ -105,6 +111,86 @@ if rename_participants:
 		for i,file in enumerate(files2rename):
 			print(f"rename {file} : {renamed_files[i]}")
 			os.rename(file,renamed_files[i])
+
+if rename_tsv:
+
+
+
+
+
+	### rename participants.tsv
+
+	participants = pd.read_csv(f"{rawdata_dir}/participants.tsv",sep = '\t')
+	equivalence_table = pd.read_csv(f"{rawdata_dir}/equivalence_table_participants.csv")# columns : original, renamed 
+	mapping_dict = dict(zip(equivalence_table['original'], equivalence_table['renamed']))
+
+	participants['participant_id'] = participants['participant_id'].map(mapping_dict)
+	## save tsv
+
+	participants.to_csv(f"{rawdata_dir}/participants.tsv",sep = '\t',index =False)
+
+	### rename all sub-*_ses-*_scans.tsv
+
+	scans_tsv_list = glob.glob(f"{rawdata_dir}/sub-*/ses-*/*scans.tsv")
+	#print(scans_tsv_list)
+
+	for file in scans_tsv_list:
+		scan_df = pd.read_csv(file,sep = '\t')
+		print(scan_df["filename"])
+
+		scan_df['filename'] = scan_df['filename'].apply(lambda x: replace_ids_in_string(x, mapping_dict))
+
+		print(scan_df)
+
+		scan_df.to_csv(file, sep='\t', index=False)
+
+		new_file_name = replace_ids_in_string(file, mapping_dict)
+
+		os.rename(file, new_file_name)
+
+if rename_summary_file:
+
+
+	conversion_table = pd.read_csv(f"{rawdata_dir}/check_conversion.csv")
+	equivalence_table = pd.read_csv(f"{rawdata_dir}/equivalence_table_participants.csv")  # columns: original, renamed
+	mapping_dict = dict(zip(equivalence_table['original'], equivalence_table['renamed']))
+
+	# conversion_table.drop(columns=['participant_id_bids'], inplace=True)
+
+	conversion_table['subject_id_bids'] = conversion_table['subject_id'].map(mapping_dict)
+
+	columns = conversion_table.columns.tolist()
+	participant_index = columns.index('subject_id')
+	columns.insert(participant_index + 1, columns.pop(columns.index('subject_id_bids')))
+	conversion_table = conversion_table[columns]
+
+	conversion_table.to_csv(f"{rawdata_dir}/check_conversion.csv", index=False)
+
+		### float to int (plus tard)
+
+	# exclude_columns = {'subject_id', 'subject_id_bids', 'session_id'}
+	# for column in conversion_table.columns:
+	# 	if column not in exclude_columns:
+	# 		conversion_table[column] = conversion_table[column].apply(lambda x: int(x) if pd.notna(x) else None)
+
+
+	# print(conversion_table)
+
+	# conversion_table.to_csv(f"{rawdata_dir}/check_conversion.csv",index = False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### add rename scans/participants.tsv

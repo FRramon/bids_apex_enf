@@ -99,7 +99,7 @@ unique_patient_names = list(set(df["patient_name"].to_list()))
 if correctNames: 
 #if not os.path.isfile("/Volumes/My Passport/francois/names_corrected.csv"):
 
-	unique_patient_names = [s for s in unique_patient_names if s not in ["1.06gcema","1-43HIUEMA","2-010CHAPA","apex027"]]
+	unique_patient_names = [s for s in unique_patient_names if s not in ["1.06gcema","1-43HIUEMA","2-010CHAPA","apex027","4-06MALAX"]]
 	processed_names = [name.replace(" ", "").replace("_", "-").replace(".","-").upper() for name in unique_patient_names]
 
 
@@ -110,8 +110,8 @@ if correctNames:
 
 
 	manual_correction =  {
-	    "patient_name": ["1.06gcema","1-43HIUEMA","2-010CHAPA","apex027"],
-	    "processed_name": ["1-06GUEMA","1-43HUEMA","2-10CHAPA","2-09MORJU"]
+	    "patient_name": ["1.06gcema","1-43HIUEMA","2-010CHAPA","apex027","4-06MALAX"],
+	    "processed_name": ["1-06GUEMA","1-43HUEMA","2-10CHAPA","2-09MORJU","4-06HALAX"]
 	}
 
 
