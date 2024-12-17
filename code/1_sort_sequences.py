@@ -95,7 +95,7 @@ delete_change = True
 
 ## Variable list
 source_dir = "/Volumes/BackupDisk/APEX/apex_enf/sub-enf"
-docs_dir = "/Volumes/BackupDisk/APEX/apex_enf/docs"
+docs_dir = "/Volumes/CurrentDisk/APEX/apex_enf/docs"
 
 
 ###########################################################

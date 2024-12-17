@@ -34,6 +34,8 @@ def read_time(filepath):
 			data_file = json.load(file)
 
 			exam_date = data_file.get("Examination date/time", "Field not found")
+			exam_date = data_file.get("AcquisitionDateTime", "Field not found")
+
 
 	pattern = r"(\d{4}\.\d{2}\.\d{2}) / (\d{2}:\d{2}:\d{2})"
 		# Find the match
@@ -185,25 +187,22 @@ def read_par_T1(filepath):
 
 	return json_file
 
-
-rename_target = False ## OK change 8 / 6 by lenght of dir + k OK ## attention rename ou non?
+rename_target =False ## OK change 8 / 6 by lenght of dir + k OK ## attention rename ou non?
 enrich_json = False # OK
 correct_run_time = False # OK
 correct_run_time_T2 = False #  OK 
+change_run2acq = False
+delete_date = True
 change_field_json = True
-
-correct_fmap_epi = False
-
+comment_only_T1Rs = False
+# correct_fmap_epi = False
 generate_conversion_table = False
 check_conversion = False
 
-source_data_dir = "/Volumes/BackupDisk/APEX/apex_enf/source_data"
-rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata_original_ids"
-base_dir =  "/Volumes/BackupDisk/APEX/apex_enf"
+source_data_dir = "/Volumes/CurrentDisk/APEX/apex_enf/source_data"
+rawdata_dir = "/Volumes/CurrentDisk/APEX/apex_enf/rawdata"
+base_dir =  "/Volumes/CurrentDisk/APEX/apex_enf"
 
-
-# rawdata_dir = "/Volumes/My Passport/rawdata"
-# source_data_dir = "/Volumes/My Passport/source_data"
 
 bidscoiner_history = os.path.join(rawdata_dir,"code","bidscoin","bidscoiner.tsv")
 df_bidcoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
@@ -278,18 +277,18 @@ if rename_target:
 
 
 			# Step 1: Find rows where 'targets' contains both "T2w" and "run"
-			t2w_and_run = sub_df_patient[sub_df_patient['targets'].str.contains("T2starw", case=False, na=False) & 
+			t2w_and_run = sub_df_patient[sub_df_patient['targets'].str.contains("T2w", case=False, na=False) & 
 			                             sub_df_patient['targets'].str.contains("run", case=False, na=False)]
 
 			# Step 2: Find rows where 'targets' contains "T2w" but does NOT contain "run"
-			t2w_no_run = sub_df_patient[sub_df_patient['targets'].str.contains("T2starw", case=False, na=False) & 
+			t2w_no_run = sub_df_patient[sub_df_patient['targets'].str.contains("T2w", case=False, na=False) & 
 			                            ~sub_df_patient['targets'].str.contains("run", case=False, na=False)]
 
 			# Display results
 			if len(t2w_and_run['targets'].to_list()) != 0:
 				if len(t2w_no_run['targets'].to_list()) != 0:
 
-					print("have multiple T2starw : rename first one to run_1")
+					print("have multiple T2w : rename first one to run_1")
 
 					print(t2w_no_run["targets"])
 
@@ -516,7 +515,6 @@ if enrich_json:
 					with open(target_json_file, 'w') as file:
 						json.dump(data, file, indent=4)
 
-
 ## Corrige nom run1 run2 avec les dates
 
 if correct_run_time:
@@ -542,9 +540,9 @@ if correct_run_time:
 			session_path = os.path.join(rawdata_dir,sub,ses)
 
 			T1w_runs = glob.glob(f"{session_path}/anat/*_run-*_T1w.nii.gz")
-			T2w_runs = glob.glob(f"{session_path}/anat/*_run-*_T2starw.nii.gz")
+			T2w_runs = glob.glob(f"{session_path}/anat/*_run-*_T2w.nii.gz")
 
-			have_T2 = glob.glob(f"{session_path}/anat/*_T2starw.nii.gz")
+			have_T2 = glob.glob(f"{session_path}/anat/*_T2w.nii.gz")
 			dwi_runs = glob.glob(f"{session_path}/dwi/*dir-PA_run-*_dwi.nii.gz")
 			dwiAP_runs = glob.glob(f"{session_path}/fmap/*dir-AP_run-*_epi.nii.gz")
 			
@@ -631,58 +629,58 @@ if correct_run_time:
 	print(f"total T2  : {T2_tot}")
 
 
-if correct_fmap_epi:
+# if correct_fmap_epi:
 
-	epi_files = glob.glob(f"{source_data_dir}/sub-*/ses-*/*DTI2-3-alt-topup*.PAR")
+# 	epi_files = glob.glob(f"{source_data_dir}/sub-*/ses-*/*DTI2-3-alt-topup*.PAR")
 
-	temp_dir = os.path.join(base_dir,"temp_epi")
-	if not os.path.isdir(temp_dir):
-		os.mkdir(temp_dir)
-
-
-	# for file in tqdm(epi_files):
-
-	# 	print(file)
-
-	# 	command = f"dcm2niix -o {temp_dir} -f %n_%f_%p_%4s  {file} "
-	# 	print(command)
-	# 	subprocess.run(command, shell = True)
+# 	temp_dir = os.path.join(base_dir,"temp_epi")
+# 	if not os.path.isdir(temp_dir):
+# 		os.mkdir(temp_dir)
 
 
-	bv_files = glob.glob(f"{temp_dir}/*.bv*")
+# 	# for file in tqdm(epi_files):
 
-	for file in bv_files:
+# 	# 	print(file)
 
-		split_file = os.path.basename(file).split("_")
-
-
-		patient_name = split_file[0]
-		session_id = split_file[1]
-
-		patient_id = "sub-" + patient_name.replace("-","")
-		print(patient_id)
-
-		if patient_id == "sub-4":
-			patient_id = "sub-410WISLO"
-			session_id = split_file[2]
-
-		if patient_id == "sub-143HIUEMA":
-			patient_id = "sub-143HUEMA"
-
-		if patient_id == "sub-406MALAX":
-			patient_id = "sub-406HALAX"
+# 	# 	command = f"dcm2niix -o {temp_dir} -f %n_%f_%p_%4s  {file} "
+# 	# 	print(command)
+# 	# 	subprocess.run(command, shell = True)
 
 
-		## recupere extension
+# 	bv_files = glob.glob(f"{temp_dir}/*.bv*")
 
-		extension = os.path.basename(file)[-4:]
+# 	for file in bv_files:
 
-		newfilename = f"{patient_id}_{session_id}_acq-6dirs_dir-AP_epi." + extension
-		destination = os.path.join(rawdata_dir,patient_id,session_id,"fmap")
+# 		split_file = os.path.basename(file).split("_")
 
-		if not os.path.isfile(os.path.join(destination,newfilename)):
 
-			shutil.copy(file,os.path.join(destination,newfilename))
+# 		patient_name = split_file[0]
+# 		session_id = split_file[1]
+
+# 		patient_id = "sub-" + patient_name.replace("-","")
+# 		print(patient_id)
+
+# 		if patient_id == "sub-4":
+# 			patient_id = "sub-410WISLO"
+# 			session_id = split_file[2]
+
+# 		if patient_id == "sub-143HIUEMA":
+# 			patient_id = "sub-143HUEMA"
+
+# 		if patient_id == "sub-406MALAX":
+# 			patient_id = "sub-406HALAX"
+
+
+# 		## recupere extension
+
+# 		extension = os.path.basename(file)[-4:]
+
+# 		newfilename = f"{patient_id}_{session_id}_acq-6dirs_dir-AP_epi." + extension
+# 		destination = os.path.join(rawdata_dir,patient_id,session_id,"fmap")
+
+# 		if not os.path.isfile(os.path.join(destination,newfilename)):
+
+# 			shutil.copy(file,os.path.join(destination,newfilename))
 
 
 
@@ -714,7 +712,6 @@ if os.path.isfile(os.path.join(guema_dwi_dir,f"{guema_dwi_filename}.nii.gz")):
 	os.remove(os.path.join(guema_dwi_dir,f"{guema_dwi_filename2delete}.bvec"))
 
 # sub-209MORJU - ses-pre : correct dwi
-
 ## Fichier dédoublé/ Supprimer run-1
 
 morju_dwi_dir = os.path.join(rawdata_dir,"sub-209MORJU","ses-pre","dwi")
@@ -758,17 +755,17 @@ if os.path.isfile(os.path.join(meito_dwi_dir, f"{meito_dwi_filename}.nii.gz")):
     os.remove(os.path.join(meito_dwi_dir, f"{meito_dwi_filename2delete}.bvec"))
 
 
-doclo_dwi_dir = os.path.join(rawdata_dir, "sub-423DOCLO", "ses-post", "fmap")
-doclo_dwi_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-2_epi"
-doclo_dwi_filename2delete = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-1_epi"
-doclo_dwi_new_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_epi"
+doclo_dwi_dir = os.path.join(rawdata_dir, "sub-423DOCLO", "ses-post", "dwi")
+doclo_dwi_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-2_dwi"
+doclo_dwi_filename2delete = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_run-1_dwi"
+doclo_dwi_new_filename = "sub-423DOCLO_ses-post_acq-6dirs_dir-AP_dwi"
 
 if os.path.isfile(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz")):
 
     os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.nii.gz"))
     os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.json"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.json"))
-   # os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bvec"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bvec"))
-   # os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bval"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bval"))
+    os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bvec"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bvec"))
+    os.rename(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.bval"), os.path.join(doclo_dwi_dir, f"{doclo_dwi_new_filename}.bval"))
 
     os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.nii.gz"))
     os.remove(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename2delete}.json"))
@@ -781,7 +778,9 @@ if os.path.isfile(os.path.join(doclo_dwi_dir, f"{doclo_dwi_filename}.nii.gz")):
 				
 if correct_run_time_T2:
 
-	T2_list_file = glob.glob(f"{rawdata_dir}/sub-*/ses-*/anat/*run*T2starw*")
+	T2_list_file = glob.glob(f"{rawdata_dir}/sub-*/ses-*/anat/*run*T2w*")
+
+	print(T2_list_file)
 
 	list_session_dir = list(set([os.path.dirname(s) for s in T2_list_file]))
 
@@ -795,12 +794,14 @@ if correct_run_time_T2:
 		## min des deux --> run1
 		## max des deux --> run2
 
-		T2_runs_files = glob.glob(f"{session_dir}/*run-*part-phase_T2starw.json")
+		T2_runs_files = glob.glob(f"{session_dir}/*run-*part-phase_T2w.json")
+
+		print(T2_runs_files)
 
 
 		time1 = read_time(T2_runs_files[0])
 		time2 = read_time(T2_runs_files[1])
-
+	
 		time_list = [time1,time2]
 
 		print(time_list)
@@ -869,6 +870,174 @@ if correct_run_time_T2:
 				for i,file in enumerate(files_runid3):
 					os.rename(os.path.join(session_dir,file),os.path.join(session_dir,files_runid3_renamed[i]))
 
+
+######  RENAME RUN --> ACQ-T1RS/DIFU
+
+if  change_run2acq:
+
+
+	#### cas ou il y 2 T2
+
+	T2_list_file = glob.glob(f"{rawdata_dir}/sub-*/ses-*/anat/*run*T2w*")
+
+	list_session_dir = list(set([os.path.dirname(s) for s in T2_list_file]))
+
+	print(list_session_dir)
+
+	for session_dir in tqdm(list_session_dir):
+
+		if len(glob.glob(f"{session_dir}/*run-1_part-phase_T2w.json")) != 0:
+			T2_run1_path = glob.glob(f"{session_dir}/*run-1_part-phase_T2w.json")[0]
+			time_T2_run1 = read_time(T2_run1_path)
+
+
+		if len(glob.glob(f"{session_dir}/*run-2_part-phase_T2w.json")) != 0:
+			T2_run2_path = glob.glob(f"{session_dir}/*run-2_part-phase_T2w.json")[0]
+			time_T2_run2 = read_time(T2_run2_path)
+
+		if len(glob.glob(f"{session_dir}/*T1w.json")) != 0:
+			T1_path = glob.glob(f"{session_dir}/*T1w.json")[0]
+			time_T1 = read_time(T1_path)
+
+
+			if time_T1 == time_T2_run2:
+				print("exception run2 = run - T1")
+
+				print(session_dir)
+
+				print(f" time run-1: {time_T2_run1} ")
+				print(f" time run-2: {time_T2_run2} ")
+				print(f" time T1: {time_T1} ")
+
+### decommenter pour faire tourner
+
+	T2_list_file = [file for file in T2_list_file if 'acq' not in file and 'run' in file]
+
+	for file_path in T2_list_file:
+
+		new_file_path = file_path.replace("run-1", "acq-T1Rs").replace("run-2", "acq-DiFu")
+				   
+		os.rename(file_path, new_file_path)
+		print(f"Renamed: {file_path} -> {new_file_path}")
+
+
+	T2_list_file = glob.glob(f"{rawdata_dir}/sub-*/ses-*/anat/*T2w*")
+	T2_list_file = [file for file in T2_list_file if 'acq' not in file and 'run' not in file]
+
+	list_session_dir = list(set([os.path.dirname(s) for s in T2_list_file]))
+
+	print(list_session_dir)
+
+	for session_dir in tqdm(list_session_dir):
+
+
+		if len(glob.glob(f"{session_dir}/*part-phase_T2w.json")) != 0:
+			T2_path = glob.glob(f"{session_dir}/*part-phase_T2w.json")[0]
+			time_T2 = read_time(T2_path)
+
+
+		if len(glob.glob(f"{session_dir}/*T1w.json")) != 0:
+			T1_path = glob.glob(f"{session_dir}/*T1w.json")[0]
+			time_T1 = read_time(T1_path)
+
+
+			print("\n")
+			print(f" time run-1: {time_T2} ")
+			print(f" time T1: {time_T1} ")
+
+			if time_T1 == time_T2:
+				print("T2 time = T1 time")
+
+				print(session_dir)
+			else:
+				print("T2 time != T1 time")
+
+				### renommer T2 en T2-acq-DiFU
+
+				print(session_dir)
+
+
+	T2_list_file = glob.glob(f"{rawdata_dir}/sub-*/ses-*/anat/*T2w*")
+	T2_list_file = [file for file in T2_list_file if 'acq' not in file and 'run' not in file]
+
+	T2_acqT1RS = [file for file in T2_list_file if "207MAUSK" not in file and "postdiff" not in file]
+
+	for filepath in T2_acqT1RS:
+
+		filename = os.path.basename(filepath)
+		anat_path = os.path.dirname(filepath)
+
+		new_T2_filename = "_".join(filename.split("_")[:2]) + "_acq-T1Rs_" + "_".join(filename.split("_")[2:])
+
+
+		os.rename(os.path.join(anat_path,filename),os.path.join(anat_path,new_T2_filename))
+
+	T2_acqDiFu = list(set(T2_list_file) - set(T2_acqT1RS))
+
+	for filepath in T2_acqDiFu:
+
+		filename = os.path.basename(filepath)
+		anat_path = os.path.dirname(filepath)
+
+		new_T2_filename = "_".join(filename.split("_")[:2]) + "_acq-DiFu_" + "_".join(filename.split("_")[2:])
+
+		print(new_T2_filename)
+
+
+		os.rename(os.path.join(anat_path,filename), os.path.join(anat_path,new_T2_filename))
+
+
+
+if comment_only_T1Rs:
+
+	subject_list = [s for s in os.listdir(rawdata_dir) if "sub" in s]
+
+	columns = ["subject_id", "session_id", "comment"]
+	comments_df = pd.DataFrame(columns=columns)
+
+
+	for sub in tqdm(subject_list):
+		session_list = [s for s in os.listdir(os.path.join(rawdata_dir,sub)) if "ses" in s]
+
+		for ses in session_list:
+
+			files_in_dir = os.listdir(os.path.join(rawdata_dir,sub,ses,"anat"))
+
+			# Filter files that match the specific acquisition patterns
+			acq_DiFu_files = [f for f in files_in_dir if "acq-DiFu" in f]
+			acq_T1Rs_files = [f for f in files_in_dir if "acq-T1Rs" in f]
+
+			# Check if there is one type of file but not the other
+			# if (acq_DiFu_files and not acq_T1Rs_files) or (acq_T1Rs_files and not acq_DiFu_files):
+			# 	print(f"Subject: {sub}, Session: {ses} - Missing one acquisition type")
+
+			
+			if acq_DiFu_files and not acq_T1Rs_files:
+				print(f"Subject: {sub}, Session: {ses} - Missing acq-T1Rs file")
+
+
+			elif acq_T1Rs_files and not acq_DiFu_files:
+				print(f"Subject: {sub}, Session: {ses} - Missing acq-DiFu file")
+
+				comment = f"Missing acq-DiFu T2w file"
+				comments_df = pd.concat(
+					[
+						comments_df, 
+							pd.DataFrame(
+								[[sub, ses, comment]], 
+								columns=columns
+								)
+							], 
+							ignore_index=True
+						)
+
+
+	comments_df.to_csv("/Volumes/BackupDisk/APEX/apex_enf/comments/comments_missing_acq_T2.csv", index=False)
+
+
+
+
+
 def update_json_fields(json_data, field_mapping, delete_fields):
     if isinstance(json_data, dict):
         # Remove keys that are in the delete_fields list
@@ -876,6 +1045,8 @@ def update_json_fields(json_data, field_mapping, delete_fields):
         
         # Replace keys as per field_mapping
         updated_json = {field_mapping.get(k, k): update_json_fields(v, field_mapping, delete_fields) for k, v in json_data.items()}
+
+
         return updated_json
     
     elif isinstance(json_data, list):
@@ -920,12 +1091,11 @@ if change_field_json:
 	}
 
 
-	list_delete_field = ["Patient name","Protocol name", "Acquisition nr", "Series Type","Patient position","Repetition time [ms]"]
+	list_delete_field = ["Patient name","Protocol name", "Acquisition nr", "Series Type","Patient position","Repetition time [ms]","PatientName","SeriesDescription","Filename","NiftiName"]
 
 	json_file_list = glob.glob(f"{rawdata_dir}/sub-*/ses-*/*/*.json")
 
 	for file_path in tqdm(json_file_list):
-		print(file_path)
 		# File path (same for input and output)
 	#	file_path = "/Volumes/My Passport/rawdata/sub-101VALAL/ses-pre/func/sub-101VALAL_ses-pre_task-stop_bold.json"
 
@@ -935,6 +1105,22 @@ if change_field_json:
 
 		# Update the JSON (both replacing keys and deleting unwanted fields)
 		updated_json_data = update_json_fields(json_data, dict_correct_field, list_delete_field)
+
+		if delete_date:
+
+			if "AcquisitionDateTime" in updated_json_data:
+
+
+				date_time = json_data["AcquisitionDateTime"] 
+
+				if "/" in date_time:
+					new_date_time = date_time.split("/")[1][1:]
+				if ":" not in date_time:
+					time_uncorrected = date_time[8:]
+					new_date_time = time_uncorrected[:2] + ":" + time_uncorrected[2:4] + ":" + time_uncorrected[4:6]
+
+
+				updated_json_data["AcquisitionDateTime"] = new_date_time
 
 		# Save the updated JSON back to the same file
 		with open(file_path, 'w') as outfile:
@@ -1017,7 +1203,7 @@ if generate_conversion_table:
 
 				if "T2" in file:
 
-					raw_files = glob.glob(os.path.join(rawdata_dir,subject_id,session_id,"anat","*T2starw*.nii.gz"))
+					raw_files = glob.glob(os.path.join(rawdata_dir,subject_id,session_id,"anat","*T2w*.nii.gz"))
 
 					if len(raw_files) == 2:
 						have_T2_source = 1
@@ -1051,7 +1237,7 @@ if generate_conversion_table:
 
 				if "stop" in file:
 
-					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"func",f"{subject_id}_{session_id}_task-stop_bold.nii.gz")
+					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"func",f"{subject_id}_{session_id}_task-sst_bold.nii.gz")
 
 					if os.path.isfile(raw_file):
 						have_stop_source = 1
@@ -1093,7 +1279,7 @@ if generate_conversion_table:
 
 				if "DTI2-3-alt-topup" in file:
 
-					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"fmap",f"{subject_id}_{session_id}_acq-6dirs_dir-AP_epi.nii.gz")
+					raw_file = os.path.join(rawdata_dir,subject_id,session_id,"dwi",f"{subject_id}_{session_id}_acq-6dirs_dir-AP_dwi.nii.gz")
 
 					if os.path.isfile(raw_file):
 						have_dwiAP_source = 1

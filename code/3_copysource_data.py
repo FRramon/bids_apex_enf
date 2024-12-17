@@ -19,9 +19,9 @@ from datetime import datetime
 
 
 code_dir = "/Users/francoisramon/Desktop/These/APEX/apex_enf/code"
-base_dir =  "/Volumes/BackupDisk/APEX/apex_enf"
-source_data_dir = "/Volumes/BackupDisk/APEX/apex_enf/source_data"
-raw_patient_dir = "/Volumes/BackupDisk/APEX/apex_enf/raw_structure"
+base_dir =  "/Volumes/CurrentDisk/APEX/apex_enf"
+source_data_dir = "/Volumes/CurrentDisk/APEX/apex_enf/source_data"
+raw_patient_dir = "/Volumes/CurrentDisk/APEX/apex_enf/raw_structure"
 raw_source_dir = "/Volumes/BackupDisk/APEX/apex_enf/sub-enf"
 
 if not os.path.isdir(source_data_dir):
@@ -43,7 +43,7 @@ print(patient_to_process)
 copysource = False
 correct_name = False	
 get_unique_sequences = False
-add_run_label = True
+add_run_label = False
 run_bidscoin = True
 
 #patient_to_process = ["2-04HEBTO"]
@@ -56,6 +56,9 @@ if copysource:
 	print(patient_to_process)
 
 	#patient_to_process = ["2-03VALMA"]
+
+	columns = ["subject_id", "session_id", "comment"]
+	comments_df = pd.DataFrame(columns=columns)
 
 	for patient_name in tqdm(patient_to_process):
 
@@ -148,6 +151,259 @@ if copysource:
 					shutil.copytree(session_dir,os.path.join(source_data_dir,"sub-204HEBTO","ses-postdiff"))
 					shutil.rmtree(os.path.dirname(session_dir))
 
+
+			if patient_name == "1-12RANEL" and ses == "ses-pre": #### special case 
+				print("special copy")
+
+
+				session_dir = os.path.join(source_data_dir,patient_name,ses)
+
+				if not os.path.isdir(session_dir):
+					os.makedirs(session_dir,exist_ok = True)
+
+					### 3DT1 : sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-3DT1-3-1	-- > 3DT1-3-1
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca112_ses-pre_mri-1486022444-1-12RANEL-T2GREph-3-1/*")):
+						shutil.copy(file,session_dir)
+
+					### T2* : sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-T2GREph-SENSE-4-1	--> T2-4-1
+
+					for file in  glob.glob(os.path.join(raw_source_dir,"sub-enfca112_ses-pre_mri-1486022444-1-12RANEL-3DT1-2-1/*")):
+						shutil.copy(file,session_dir)
+
+					### rs : sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-rs-multi-echo-SENSE-5-1	--> rs-5-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca112_ses-pre_mri-1486022444-1-12RANEL-rs-multi-echo-4-1/*")):
+						shutil.copy(file,session_dir)
+
+					### stop : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-6-1-stop-SENSE	-- stop-6-1
+					
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca112_ses-pre_mri-1486022827-DBIEX-4-1-stop/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "1-12RANEL-stop-SENSE-4-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "1-12RANEL-stop-SENSE-4-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						# shutil.copy(file,session_dir)
+
+					### b0 : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-7-1-WIP-B0MAP	--> b0-7-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca112_ses-pre_mri-1486022827-DBIEX-6-1-WIP-B0MAP/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "1-12RANEL-WIP-B0MAP-6-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "1-12RANEL-WIP-B0MAP-6-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+					### dwi : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-8-1-WIP-DTI2-3-SENSE	--> dwi 8-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca112_ses-pre_mri-1486022827-DBIEX-7-1-DTI2-3-alt/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "1-12RANEL-WIP-DTI2-3-SENSE-7-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "1-12RANEL-WIP-DTI2-3-SENSE-7-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+					### T2* : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-3-1-T2GREph-SENSE	--> T2-9-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca112_ses-pre_mri-1486022827-DBIEX-2-1-T2GREph/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "1-12RANEL-T2GREph-SENSE-2-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "1-12RANEL-T2GREph-SENSE-2-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca112_ses-pre_mri-1486022827-DBIEX-5-1-dot/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "1-12RANEL-dot-SENSE-5-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "1-12RANEL-dot-SENSE-5-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+				if os.path.isdir(os.path.join(source_data_dir,"sub-112RANEL")):
+
+					shutil.copytree(session_dir,os.path.join(source_data_dir,"sub-112RANEL","ses-pre"))
+					shutil.rmtree(os.path.dirname(session_dir))
+
+			if patient_name == "1-13GRATR" and ses == "ses-pre": #### special case 
+				print("special copy")
+
+
+				session_dir = os.path.join(source_data_dir,patient_name,ses)
+
+				if not os.path.isdir(session_dir):
+					os.makedirs(session_dir,exist_ok = True)
+
+					### 3DT1 : sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-3DT1-3-1	-- > 3DT1-3-1
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca113_ses-pre_mri-1486024838-1-13GRATR-WIP-B0MAP-6-1/*")):
+						shutil.copy(file,session_dir)
+
+					### T2* : sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-T2GREph-SENSE-4-1	--> T2-4-1
+
+					for file in  glob.glob(os.path.join(raw_source_dir,"sub-enfca113_ses-pre_mri-1486024838-1-13GRATR-T2GREph-2-1/*")):
+						shutil.copy(file,session_dir)
+
+					### rs : sub-enfci204_ses-postdiff_mri-1474291553-2-04HEBTO-rs-multi-echo-SENSE-5-1	--> rs-5-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca113_ses-pre_mri-1486024838-1-13GRATR-dot-3-1/*")):
+						shutil.copy(file,session_dir)
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca113_ses-pre_mri-1486024838-1-13GRATR-DTI2-3-alt-7-1/*")):
+						shutil.copy(file,session_dir)
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca113_ses-pre_mri-1486024838-1-13GRATR-stop-5-1/*")):
+						shutil.copy(file,session_dir)
+
+					### stop : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-6-1-stop-SENSE	-- stop-6-1
+					
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca113_ses-pre_mri-1486024505-DBIEX-2-1-3DT1/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "1-13GRATR-3DT1-2-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "1-13GRATR-3DT1-2-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						# shutil.copy(file,session_dir)
+
+					### b0 : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-7-1-WIP-B0MAP	--> b0-7-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca113_ses-pre_mri-1486024505-DBIEX-3-1-T2GREph/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "1-13GRATR-T2Greph-SENSE-3-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "1-13GRATR-T2Greph-SENSE-3-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+					### dwi : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-8-1-WIP-DTI2-3-SENSE	--> dwi 8-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfca113_ses-pre_mri-1486024505-DBIEX-4-1-rs-multi-echo/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "1-13GRATR-rs-multi-echo-4-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "1-13GRATR-rs-multi-echo-4-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+					### T2* : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-3-1-T2GREph-SENSE	--> T2-9-1
+
+					
+				if os.path.isdir(os.path.join(source_data_dir,"sub-113GRATR")):
+
+					shutil.copytree(session_dir,os.path.join(source_data_dir,"sub-113GRATR","ses-pre"))
+					shutil.rmtree(os.path.dirname(session_dir))
+
+			if patient_name == "5-03NICCY" and ses == "ses-postdiff": #### special case 
+				print("special copy")
+
+
+				session_dir = os.path.join(source_data_dir,patient_name,ses)
+
+				if not os.path.isdir(session_dir):
+					os.makedirs(session_dir,exist_ok = True)
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfprema503_ses-postdiff_mri-1473854661-DBIEX-3-1-3DT1/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "5-03NICCY-3DT1-3-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "5-03NICCY-3DT1-3-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						# shutil.copy(file,session_dir)
+
+					### b0 : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-7-1-WIP-B0MAP	--> b0-7-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfprema503_ses-postdiff_mri-1473854661-DBIEX-4-1-T2GREph-SENSE/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "5-03NICCY-T2Greph-SENSE-4-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "5-03NICCY-T2Greph-SENSE-4-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+					### dwi : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-8-1-WIP-DTI2-3-SENSE	--> dwi 8-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfprema503_ses-postdiff_mri-1473854661-DBIEX-5-1-rs-multi-echo-SENSE/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "5-03NICCY-rs-multi-echo-5-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "5-03NICCY-rs-multi-echo-5-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfprema503_ses-postdiff_mri-1473854806-DBIEX-5-1-stop-SENSE/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "5-03NICCY-stop-SENSE-5-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "5-03NICCY-stop-SENSE-5-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						# shutil.copy(file,session_dir)
+
+					### b0 : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-7-1-WIP-B0MAP	--> b0-7-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfprema503_ses-postdiff_mri-1473854806-DBIEX-7-1-WIP-B0MAP/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "5-03NICCY-WIP-B0MAP-7-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "5-03NICCY-WIP-B0MAP-7-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+					### dwi : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-8-1-WIP-DTI2-3-SENSE	--> dwi 8-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfprema503_ses-postdiff_mri-1473854806-DBIEX-8-1-WIP-DTI2-3-SENSE/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "5-03NICCY-WIP-DTI2-3-SENSE-8-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "5-03NICCY-WIP-DTI2-3-SENSE-8-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+					### T2* : sub-enfci204_ses-postdiff_mri-1473862350-DBIEX-3-1-T2GREph-SENSE	--> T2-9-1
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfprema503_ses-postdiff_mri-1473854806-DBIEX-3-1-T2GREph-SENSE/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "5-03NICCY-T2GREph-SENSE-3-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "5-03NICCY-T2GREph-SENSE-3-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+					for file in glob.glob(os.path.join(raw_source_dir,"sub-enfprema503_ses-postdiff_mri-1473854806-DBIEX-6-1-dot-SENSE/*")):
+						if os.path.basename(file)[-3:] == "PAR":
+							newfilename = "5-03NICCY-dot-SENSE-6-1.PAR"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+
+						if os.path.basename(file)[-3:] == "REC":
+							newfilename = "5-03NICCY-dot-SENSE-6-1.REC"
+							shutil.copy(file,os.path.join(session_dir,newfilename))
+				if os.path.isdir(os.path.join(source_data_dir,"sub-503NICCY")):
+
+					shutil.copytree(session_dir,os.path.join(source_data_dir,"sub-503NICCY","ses-postdiff"))
+					shutil.rmtree(os.path.dirname(session_dir))
+
+
 				### copy dbiex-4-1 in dot dot-SENSE-4-1
 				### copy dbiex-5-1 in rs (pb slice) rs-multi-echo-SENSE-5-1
 				## copy dbiex-6-1 in stop stop-SENSE-6-1
@@ -193,7 +449,6 @@ if copysource:
 				### else : print(not duplicate)
 
 
-
 				for item in unique_items:
 
 					file2rename = [f for f in total_filepath_list if os.path.basename(f) == item  and "DBIEX" not in f] # and "DBIEX not in f"
@@ -223,10 +478,36 @@ if copysource:
 
 							shutil.copy(file2rename[0],session_dir)
 
+							comment = f"Delete duplicate file : {file2rename[0]}"
+								# Append a new row to the comments DataFrame
+							comments_df = pd.concat(
+								[
+									comments_df, 
+									pd.DataFrame(
+										[[patient_name, ses, comment]], 
+										columns=columns
+									)
+								], 
+								ignore_index=True
+							)
+
 						else:  ### erreur transfert, on copie le + "lourd"
 
 							imax = sizefiles.index(max(sizefiles))
 							shutil.copy(file2rename[imax],session_dir)
+
+							comment = f"Two files for the same sequence : keep {file2rename[imax]}"
+								# Append a new row to the comments DataFrame
+							comments_df = pd.concat(
+								[
+									comments_df, 
+									pd.DataFrame(
+										[[patient_name, ses, comment]], 
+										columns=columns
+									)
+								], 
+								ignore_index=True
+							)
 
 					file2rename = [f for f in total_filepath_list if os.path.basename(f) == item if ".PAR" in f]
 
@@ -248,11 +529,40 @@ if copysource:
 
 							shutil.copy(file2rename[0],session_dir)
 
+							comment = f"Delete duplicate file : {file2rename[0]}"
+								# Append a new row to the comments DataFrame
+							comments_df = pd.concat(
+								[
+									comments_df, 
+									pd.DataFrame(
+										[[patient_name, ses, comment]], 
+										columns=columns
+									)
+								], 
+								ignore_index=True
+							)
+
 						else:  ### erreur transfert, on copie le + "lourd"
 
 							imax = sizefiles.index(max(sizefiles))
 							shutil.copy(file2rename[imax],session_dir)
 
+							comment = f"Two files for the same sequence : keep {file2rename[imax]}"
+								# Append a new row to the comments DataFrame
+							comments_df = pd.concat(
+								[
+									comments_df, 
+									pd.DataFrame(
+										[[patient_name, ses, comment]], 
+										columns=columns
+									)
+								], 
+								ignore_index=True
+							)
+
+	comments_df.to_csv("/Volumes/BackupDisk/APEX/apex_enf/comments/comments_duplicates_larger.csv", index=False)
+
+	
 				# print(sizefiles)
 
 
@@ -367,75 +677,76 @@ def read_par(filepath):
 	return time
 
 
-if add_run_label:
+# if add_run_label:
 
 
-	patient_list = [s for s in os.listdir(os.path.join(source_data_dir)) if "sub" in s]
+# 	patient_list = [s for s in os.listdir(os.path.join(source_data_dir)) if "sub" in s]
 
-	for sub in tqdm(patient_list):
-		session_list = [s for s in os.listdir(os.path.join(source_data_dir,sub)) if 'ses' in s]
+# 	for sub in tqdm(patient_list):
+# 		session_list = [s for s in os.listdir(os.path.join(source_data_dir,sub)) if 'ses' in s]
 
-		for ses in session_list:
-
-
-
-			files_path = os.path.join(source_data_dir,sub,ses)
-
-			file_list =os.listdir(files_path)
-
-			T2_template = ['*T2GREph-*-1.PAR','*T2GREph-SENSE-*-1.PAR']
+# 		for ses in session_list:
 
 
-			T2_list1 = glob.glob(os.path.join(files_path,T2_template[0]))
-			T2_list2 = glob.glob(os.path.join(files_path,T2_template[1]))
 
-			T2_list = T2_list1 + T2_list2
+# 			files_path = os.path.join(source_data_dir,sub,ses)
 
-			series_order_list = []
-			time_list = []
+# 			file_list =os.listdir(files_path)
 
-			if len(T2_list) >= 2:
+# 			T2_template = ['*T2GREph-*-1.PAR','*T2GREph-SENSE-*-1.PAR']
 
-				for file in T2_list:
 
-					time = read_par(file)
-					time_list.append(time)
+# 			T2_list1 = glob.glob(os.path.join(files_path,T2_template[0]))
+# 			T2_list2 = glob.glob(os.path.join(files_path,T2_template[1]))
 
-					filename = os.path.basename(file)
-					series_order = filename[:-4][-3]
-					series_order_list.append(series_order)
+# 			T2_list = T2_list1 + T2_list2
 
-				series_order_bool = (series_order_list[0] < series_order_list[1])
+# 			series_order_list = []
+# 			time_list = []
 
-				time_format = "%H:%M:%S"
+# 			if len(T2_list) >= 2:
+
+# 				for file in T2_list:
+
+# 					time = read_par(file)
+# 					time_list.append(time)
+
+# 					filename = os.path.basename(file)
+# 					series_order = filename[:-4][-3]
+# 					series_order_list.append(series_order)
+
+# 				series_order_bool = (series_order_list[0] < series_order_list[1])
+
+# 				time_format = "%H:%M:%S"
 			    
-				# Convert strings to datetime objects
-				t0 = datetime.strptime(time_list[0], time_format)
-				t1 = datetime.strptime(time_list[1], time_format)
+# 				# Convert strings to datetime objects
+# 				t0 = datetime.strptime(time_list[0], time_format)
+# 				t1 = datetime.strptime(time_list[1], time_format)
 
-				time_order_bool = (t0<t1)
-				time_order_equal = t0 == t1
+# 				time_order_bool = (t0<t1)
+# 				time_order_equal = t0 == t1
 
-				if time_order_equal:
-					print("time points are equal")
+# 				if time_order_equal:
+# 					print("time points are equal")
 
-				else:
+# 				else:
 
-					right_order_runs = (series_order_bool == time_order_bool)
+# 					right_order_runs = (series_order_bool == time_order_bool)
 
-					if right_order_runs:
-						print(sub)
-						print(ses)
+# 					if right_order_runs:
+# 						print(sub)
+# 						print(ses)
 
 
 
-						print(f" Right order runs : {right_order_runs}")
+# 						print(f" Right order runs : {right_order_runs}")
 
 
 if run_bidscoin:
 
 	# create rawdata dir
 	rawdata_dir = os.path.join(base_dir,"rawdata")
+
 	if not os.path.isdir(rawdata_dir):
 		os.mkdir(rawdata_dir)
 

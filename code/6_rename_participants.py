@@ -10,8 +10,8 @@ from collections import defaultdict
 from datetime import datetime
 import shutil
 
-source_data_dir = "/Volumes/BackupDisk/APEX/apex_enf/source_data"
-rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
+source_data_dir = "/Volumes/CurrentDisk/APEX/apex_enf/source_data"
+rawdata_dir = "/Volumes/CurrentDisk/APEX/apex_enf/rawdata"
 
 
 rename_participants = True
@@ -95,7 +95,6 @@ if rename_participants:
 
 	print(renamed_subjects)
 	print(list(dict_name.keys()))
-
 
 	conversion_table = pd.DataFrame(list(dict_name.items()), columns=["original", "renamed"])
 

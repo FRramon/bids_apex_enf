@@ -53,23 +53,28 @@ def mat2json(mat_file_path,json_file_path):
 
 
 
-sourcedata_dir =  "/Volumes/BackupDisk/APEX/apex_enf/source_data"
-rawdata_dir = "/Volumes/BackupDisk/APEX/apex_enf/rawdata"
+sourcedata_dir =  "/Volumes/CurrentDisk/APEX/apex_enf/source_data"
+rawdata_dir = "/Volumes/CurrentDisk/APEX/apex_enf/rawdata"
 
 bidscoiner_history = os.path.join(rawdata_dir,"code","bidscoin","bidscoiner.tsv")
 df_bidscoiner_history = pd.read_csv(bidscoiner_history,sep = '\t')
 
-task_list = ["dot","stop"]
+task_list = ["stop","dot"]
 csv_data = []
 
 convert_dot_stop = True
 correct_runs = True
-
 ### A la place aller chercher dans source_data. glob etc
 
 if convert_dot_stop:
 
 	for task in task_list:
+
+		if task == "stop":
+			task_bids = "sst"
+		elif task == "dot":
+			task_bids = "dot"
+
 
 		files_df = df_bidscoiner_history[
 	    df_bidscoiner_history['source'].str.contains(task) & 
@@ -104,12 +109,9 @@ if convert_dot_stop:
 			list_files_task = glob.glob(f"{source_path}/*{task}*.PAR")
 			print(list_files_task)
 
-			existing_file = glob.glob(f"{rawdata_dir}/{subject_id}/{session_id}/*{task}*.nii.gz")
+			existing_file = glob.glob(f"{rawdata_dir}/{subject_id}/{session_id}/*{task_bids}*.nii.gz")
 
 			if len(existing_file) == 0:
-
-
-
 
 				if len(list_files_task) == 1:
 
@@ -141,7 +143,7 @@ if convert_dot_stop:
 							# CONVERT MAT FILE TO JSON
 
 					mat_file_path = os.path.join(output_dir,"dcmHeaders.mat")
-					json_file_path = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_bold.json")
+					json_file_path = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task_bids}_bold.json")
 
 					mat2json(mat_file_path,json_file_path)
 					os.remove(mat_file_path)
@@ -149,7 +151,7 @@ if convert_dot_stop:
 							# RENAME NII.GZ FILE TO BIDS
 
 					out_nii_file = glob.glob(f'{output_dir}/*{task}*.nii.gz')[0]
-					out_nii_bids_file = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_bold.nii.gz")
+					out_nii_bids_file = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task_bids}_bold.nii.gz")
 					os.rename(out_nii_file,out_nii_bids_file)
 
 					csv_data.append([file, out_nii_bids_file])
@@ -181,7 +183,7 @@ if convert_dot_stop:
 					## CONVERT MAT FILE TO JSON
 
 					mat_file_path = os.path.join(output_dir,"dcmHeaders.mat")
-					json_file_path = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_run-{run_id}_bold.json")
+					json_file_path = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task_bids}_run-{run_id}_bold.json")
 
 
 					mat2json(mat_file_path,json_file_path)
@@ -190,7 +192,7 @@ if convert_dot_stop:
 					## RENAME NII.GZ FILE TO BIDS
 
 					out_nii_file = glob.glob(f'{output_dir}/*{task}*_1.nii.gz')[0]  ### ajouter run 
-					out_nii_bids_file = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task}_run-{run_id}_bold.nii.gz")
+					out_nii_bids_file = os.path.join(output_dir,f"{subject_id}_{session_id}_task-{task_bids}_run-{run_id}_bold.nii.gz")
 
 					os.rename(out_nii_file,out_nii_bids_file)
 					csv_data.append([file, out_nii_bids_file])
@@ -208,10 +210,17 @@ if convert_dot_stop:
 # for files in files2delete:
 # 	os.remove(files)
 
+
+task_list = ["dot","sst"]
+
+
 if correct_runs:
 	subject_list = [s for s in os.listdir(rawdata_dir) if "sub" in s]
 
 	#subject_list = ["sub-227JOUAN"]
+
+	columns = ["subject_id", "session_id", "comment"]
+	comments_df = pd.DataFrame(columns=columns)
 
 	for task in task_list:
 
@@ -261,6 +270,19 @@ if correct_runs:
 						elif index2keep == 1:
 							index2delete = 0
 
+						comment = f"Two {task}, one file has {min(dim_list)} volumes, the other {max(dim_list)}. Keep larger"
+								# Append a new row to the comments DataFrame
+						comments_df = pd.concat(
+							[
+								comments_df, 
+								pd.DataFrame(
+									[[sub, ses, comment]], 
+									columns=columns
+								)
+							], 
+							ignore_index=True
+						)
+
 
 						filepath_root2keep = task_runs[index2keep][:-5]
 
@@ -279,6 +301,10 @@ if correct_runs:
 						nii2delete = task_runs[index2delete][:-5] + ".nii.gz"
 
 						os.remove(nii2delete)
+
+	comments_df.to_csv("/Volumes/BackupDisk/APEX/apex_enf/comments/comments_task_fmri.csv", index=False)
+
+						####### Ajouter au csv "keep {task} with n volumes, delete file with less (k) volumes"
 
 
 					#newfilepath_nii = task_runs[index2keep][:-4] + ".nii.gz"

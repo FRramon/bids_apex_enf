@@ -22,11 +22,11 @@ getSequences_persubject = True
 createSes = True
 rename_session = True
 createSes_seq = True
+comment_names = True
 createSummary = True
 
-docs_dir = "/Volumes/BackupDisk/APEX/apex_enf/docs"
-raw_structure_dir = "/Volumes/BackupDisk/APEX/apex_enf/raw_structure"
-
+docs_dir = "/Volumes/CurrentDisk/APEX/apex_enf/docs"
+raw_structure_dir = "/Volumes/CurrentDisk/APEX/apex_enf/raw_structure"
 
 
 df_recpar = pd.read_csv(os.path.join(docs_dir,"scan_folders_recpar.csv"))
@@ -120,6 +120,9 @@ if correctNames:
 
 	df_correct_names = pd.concat([df_correct_names,df_manual_correction])
 	df_correct_names.to_csv("/Volumes/BackupDisk/APEX/apex_enf/docs/names_corrected.csv")
+
+
+
 
 
 #### Cette structure montre qu'il y a des mélanges de nom.
@@ -393,6 +396,40 @@ if createSes_seq:
 	# ## Exclu mais à ajouter : 2-03VALMA ci203
 	# if len(unique_dates) >= 4:
 	# 	print(ids)
+
+if comment_names:
+# Initialize an empty DataFrame with the required columns
+
+	csv_files = glob.glob(f"{raw_structure_dir}/*/ses-*/*.csv")
+	columns = ["subject_id", "session_id", "comment"]
+	comments_df = pd.DataFrame(columns=columns)
+
+	# Process each CSV file
+	for csv_file in csv_files:
+		df = pd.read_csv(csv_file)
+		# Extract session name from the file path (assumes session name can be derived from the path)
+		session_name = csv_file.split("/")[-2]
+
+		# Iterate through rows to check conditions and add comments
+		row = df.iloc[0]
+		if row["corrected_name"] != row["associated_name"]:
+				# Construct the comment
+			comment = f"{row['associated_name']} instead of {row['corrected_name']}"
+				# Append a new row to the comments DataFrame
+			comments_df = pd.concat(
+				[
+					comments_df, 
+					pd.DataFrame(
+						[[row["corrected_name"], session_name, comment]], 
+						columns=columns
+					)
+				], 
+				ignore_index=True
+			)
+
+# Save the collected comments to a CSV file
+	comments_df.to_csv("/Volumes/BackupDisk/APEX/apex_enf/comments/comments_name_correction.csv", index=False)
+
 
 
 if createSummary:
